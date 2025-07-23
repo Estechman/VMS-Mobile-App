@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, devin/1753289491-phase1-foundation-risk-mitigation ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, devin/1753289491-phase1-foundation-risk-mitigation ]
 
 jobs:
   security-audit:
