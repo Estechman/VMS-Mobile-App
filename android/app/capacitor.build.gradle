@@ -42,7 +42,8 @@ dependencies {
     implementation "io.grpc:grpc-okhttp:1.68.0"
     implementation "androidx.legacy:legacy-support-v4:1.0.0"
 }
-apply from: "../../node_modules/cordova-plugin-ignore-lint-translation/src/android/build-extras.gradle"
+// Temporarily disabled due to gradle version conflicts
+// apply from: "../../node_modules/cordova-plugin-ignore-lint-translation/src/android/build-extras.gradle"
 // Temporarily disabled Firebase plugin due to Capacitor compatibility issues
 // apply from: "../../node_modules/cordova-plugin-firebasex/src/android/build.gradle"
 apply from: "../../node_modules/cordova-plugin-photo-library-zm/src/android/build.gradle"
