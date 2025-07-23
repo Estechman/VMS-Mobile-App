@@ -137,75 +137,87 @@ angular.module('zmApp.controllers').controller('zmApp.PortalLoginCtrl', ['$ionic
 
 
         }
-        else if ($ionicPlatform.is('android') && loginData.usePin) {
-
-          FingerprintAuth.isAvailable(function (result) {
-              NVR.debug("FingerprintAuth available: " + JSON.stringify(result));
-              if (result.isAvailable == true && result.hasEnrolledFingerprints == true) {
-                var encryptConfig = {
-                  clientId: "zmNinja",
-                  username: "doesntmatter",
-                  password: "doesntmatter",
-                  maxAttempts: 5,
-                  locale: "en_US",
-                  dialogTitle: $translate.instant('kPleaseAuthenticate'),
-                  dialogMessage: $translate.instant('kPleaseAuthenticate'),
-                  dialogHint: "",
-                }; // See config object for required parameters
-                FingerprintAuth.encrypt(encryptConfig, function (succ) {
-                  NVR.log("Touch success");
+        else if (window.Capacitor && window.Capacitor.isNativePlatform() && loginData.usePin) {
+          NVR.debug("Capacitor platform detected, using capacitor-native-biometric");
+          
+          import('capacitor-native-biometric').then(function(NativeBiometric) {
+            NativeBiometric.NativeBiometric.isAvailable().then(function(result) {
+              NVR.debug("Capacitor biometric available: " + JSON.stringify(result));
+              if (result.isAvailable) {
+                NativeBiometric.NativeBiometric.verifyIdentity({
+                  reason: $translate.instant('kPleaseAuthenticate'),
+                  title: $translate.instant('kPleaseAuthenticate'),
+                  subtitle: '',
+                  description: ''
+                }).then(function() {
+                  NVR.log("Capacitor biometric auth success");
                   unlock(true);
-                }, function (err) {
-                  NVR.log("Touch Failed " + JSON.stringify(msg));
+                }).catch(function(error) {
+                  NVR.log("Capacitor biometric auth failed: " + JSON.stringify(error));
                 });
-              } // if available                            
-            },
-            function (err) {
-              NVR.log("Fingerprint auth not available or not compatible with Android specs: " + JSON.stringify(err));
-            }
-
-          ); //isAvailable
-
-        } else if ($ionicPlatform.is('ios') && loginData.usePin) {
-
-          window.plugins.touchid.isAvailable(
-            function () {
-              window.plugins.touchid.verifyFingerprint(
-                $translate.instant('kPleaseAuthenticate'), // this will be shown in the native scanner popup
-                function (msg) {
-                  NVR.log("Touch success");
-                  unlock(true);
-                }, // success handler: fingerprint accepted
-                function (msg) {
-                  NVR.log("Touch Failed " + JSON.stringify(msg));
-                } // error handler with errorcode and localised reason
-              );
-            },
-            function (err) {});
-
-          /* $cordovaTouchID.checkSupport()
-               .then(function()
-               {
-                   // success, TouchID supported
-                   $cordovaTouchID.authenticate("")
-                       .then(function()
-                           {
-                               NVR.log("Touch Success");
-                               // Don't assign pin as it may be alphanum
-                               unlock(true);
-
-                           },
-                           function()
-                           {
-                               NVR.log("Touch Failed");
-                           });
-               }, function(error)
-               {
-                   NVR.log("TouchID not supported");
-               });*/
+              } else {
+                NVR.log("Capacitor biometric not available, showing PIN prompt");
+              }
+            }).catch(function(error) {
+              NVR.log("Capacitor biometric availability check failed: " + JSON.stringify(error));
+            });
+          }).catch(function(error) {
+            NVR.log("Capacitor biometric import failed: " + JSON.stringify(error));
+            fallbackToCordovaBiometric();
+          });
+        }
+        else if (($ionicPlatform.is('android') || $ionicPlatform.is('ios')) && loginData.usePin) {
+          fallbackToCordovaBiometric();
         } else // touch was not used
         {
           NVR.log("not checking for touchID");
+        }
+        
+        function fallbackToCordovaBiometric() {
+          if ($ionicPlatform.is('android')) {
+            NVR.debug("Using Cordova FingerprintAuth for Android");
+            FingerprintAuth.isAvailable(function (result) {
+                NVR.debug("FingerprintAuth available: " + JSON.stringify(result));
+                if (result.isAvailable == true && result.hasEnrolledFingerprints == true) {
+                  var encryptConfig = {
+                    clientId: "zmNinja",
+                    username: "doesntmatter",
+                    password: "doesntmatter",
+                    maxAttempts: 5,
+                    locale: "en_US",
+                    dialogTitle: $translate.instant('kPleaseAuthenticate'),
+                    dialogMessage: $translate.instant('kPleaseAuthenticate'),
+                    dialogHint: "",
+                  }; // See config object for required parameters
+                  FingerprintAuth.encrypt(encryptConfig, function (succ) {
+                    NVR.log("Touch success");
+                    unlock(true);
+                  }, function (err) {
+                    NVR.log("Touch Failed " + JSON.stringify(err));
+                  });
+                } // if available                            
+              },
+              function (err) {
+                NVR.log("Fingerprint auth not available or not compatible with Android specs: " + JSON.stringify(err));
+              }
+            ); //isAvailable
+          } else if ($ionicPlatform.is('ios')) {
+            NVR.debug("Using Cordova TouchID for iOS");
+            window.plugins.touchid.isAvailable(
+              function () {
+                window.plugins.touchid.verifyFingerprint(
+                  $translate.instant('kPleaseAuthenticate'), // this will be shown in the native scanner popup
+                  function (msg) {
+                    NVR.log("Touch success");
+                    unlock(true);
+                  }, // success handler: fingerprint accepted
+                  function (msg) {
+                    NVR.log("Touch Failed " + JSON.stringify(msg));
+                  } // error handler with errorcode and localised reason
+                );
+              },
+              function (err) {});
+          }
         }
 
         if (loginData.usePin ) {

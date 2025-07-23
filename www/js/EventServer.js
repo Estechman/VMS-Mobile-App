@@ -488,106 +488,180 @@ angular.module('zmApp.controllers')
         return;
       }
      
-      // get permission if we need it
-      FirebasePlugin.hasPermission(function(hasPermission){
-        if (!hasPermission) {
-          window.FirebasePlugin.grantPermission(function(hasPermission){
-            if (hasPermission) {
-              NVR.debug ('push: permission granted, waiting for token');
+      if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        NVR.debug("Capacitor Push: Initializing push notifications");
+        
+        import('@capacitor/push-notifications').then(function(PushNotifications) {
+          PushNotifications.PushNotifications.requestPermissions().then(function(result) {
+            if (result.receive === 'granted') {
+              NVR.debug('Capacitor push: permission granted, registering for notifications');
+              PushNotifications.PushNotifications.register();
             } else {
-              NVR.log('ERROR: push: Permission not granted for push');
+              NVR.log('ERROR: Capacitor push: Permission not granted for push');
+            }
+          }).catch(function(error) {
+            NVR.log('ERROR: Capacitor push: Permission request failed: ' + JSON.stringify(error));
+            fallbackToFirebasePlugin();
+          });
+        }).catch(function(error) {
+          NVR.log('Capacitor push: Import failed, falling back to Firebase: ' + JSON.stringify(error));
+          fallbackToFirebasePlugin();
+        });
+      }
+      else {
+        fallbackToFirebasePlugin();
+      }
+      
+      function fallbackToFirebasePlugin() {
+        if (window.FirebasePlugin) {
+          NVR.debug("Firebase Plugin: Initializing push notifications");
+          FirebasePlugin.hasPermission(function(hasPermission){
+            if (!hasPermission) {
+              window.FirebasePlugin.grantPermission(function(hasPermission){
+                if (hasPermission) {
+                  NVR.debug ('push: permission granted, waiting for token');
+                } else {
+                  NVR.log('ERROR: push: Permission not granted for push');
+                }
+              });
+            } else {
+              NVR.debug('push: permissions are already enabled');
             }
           });
         } else {
-          NVR.debug('push: permissions are already enabled');
+          NVR.log('ERROR: Neither Capacitor Push nor Firebase Plugin available');
         }
-      });
+      }
 
       if ($rootScope.platformOS == 'android') {
-        // Define custom  channel - all keys are except 'id' are optional.
-        var channel  = {
-          // channel ID - must be unique per app package
-          id: "zmninja",
-          // Channel description. Default: empty string
-          description: "zmNinja push",
-          // Channel name. Default: empty string
-          name: "zmNinja",
-          //The sound to play once a push comes. Default value: 'default'
-          //Values allowed:
-          //'default' - plays the default notification sound
-          //'ringtone' - plays the currently set ringtone
-          //'false' - silent; don't play any sound
-          //filename - the filename of the sound file located in '/res/raw' without file extension (mysound.mp3 -> mysound)
-          sound: "default",
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+          NVR.debug('Capacitor push: Android notification channels handled automatically');
+        }
+        else if (window.FirebasePlugin) {
+          // Define custom  channel - all keys are except 'id' are optional.
+          var channel  = {
+            // channel ID - must be unique per app package
+            id: "zmninja",
+            // Channel description. Default: empty string
+            description: "zmNinja push",
+            // Channel name. Default: empty string
+            name: "zmNinja",
+            //The sound to play once a push comes. Default value: 'default'
+            //Values allowed:
+            //'default' - plays the default notification sound
+            //'ringtone' - plays the currently set ringtone
+            //'false' - silent; don't play any sound
+            //filename - the filename of the sound file located in '/res/raw' without file extension (mysound.mp3 -> mysound)
+            sound: "default",
 
-          //Vibrate on new notification. Default value: true
-          //Possible values:
-          //Boolean - vibrate or not
-          //Array - vibration pattern - e.g. [500, 200, 500] - milliseconds vibrate, milliseconds pause, vibrate, pause, etc.
-          vibration: true,
-          // Whether to blink the LED
-          light: true,
-          //LED color in ARGB format - this example BLUE color. If set to -1, light color will be default. Default value: -1.
-          lightColor: parseInt("FF0000FF", 16).toString(),
-          //Importance - integer from 0 to 4. Default value: 4
-          //0 - none - no sound, does not show in the shade
-          //1 - min - no sound, only shows in the shade, below the fold
-          //2 - low - no sound, shows in the shade, and potentially in the status bar
-          //3 - default - shows everywhere, makes noise, but does not visually intrude
-          //4 - high - shows everywhere, makes noise and peeks
-          importance: 4,
+            //Vibrate on new notification. Default value: true
+            //Possible values:
+            //Boolean - vibrate or not
+            //Array - vibration pattern - e.g. [500, 200, 500] - milliseconds vibrate, milliseconds pause, vibrate, pause, etc.
+            vibration: true,
+            // Whether to blink the LED
+            light: true,
+            //LED color in ARGB format - this example BLUE color. If set to -1, light color will be default. Default value: -1.
+            lightColor: parseInt("FF0000FF", 16).toString(),
+            //Importance - integer from 0 to 4. Default value: 4
+            //0 - none - no sound, does not show in the shade
+            //1 - min - no sound, only shows in the shade, below the fold
+            //2 - low - no sound, shows in the shade, and potentially in the status bar
+            //3 - default - shows everywhere, makes noise, but does not visually intrude
+            //4 - high - shows everywhere, makes noise and peeks
+            importance: 4,
 
-          //Show badge over app icon when non handled pushes are present. Default value: true
-          badge: true,
+            //Show badge over app icon when non handled pushes are present. Default value: true
+            badge: true,
 
-          //Show message on locked screen. Default value: 1
-          //Possible values (default 1):
-          //-1 - secret - Do not reveal any part of the notification on a secure lockscreen.
-          //0 - private - Show the notification on all lockscreens, but conceal sensitive or private information on secure lockscreens.
-          //1 - public - Show the notification in its entirety on all lockscreens.
-          visibility: 1
-        };
+            //Show message on locked screen. Default value: 1
+            //Possible values (default 1):
+            //-1 - secret - Do not reveal any part of the notification on a secure lockscreen.
+            //0 - private - Show the notification on all lockscreens, but conceal sensitive or private information on secure lockscreens.
+            //1 - public - Show the notification in its entirety on all lockscreens.
+            visibility: 1
+          };
 
-        // Create the channel
-        FirebasePlugin.createChannel(channel,
-        function(){
-          NVR.debug('push: Channel created: ' + channel.id);
-        },
-        function(error){
-        NVR.debug('push: Create channel error: ' + error);
-        });
+          // Create the channel
+          FirebasePlugin.createChannel(channel,
+          function(){
+            NVR.debug('push: Channel created: ' + channel.id);
+          },
+          function(error){
+          NVR.debug('push: Create channel error: ' + error);
+          });
+        }
       }
 
       if ($rootScope.platformOS == 'ios') {
         if (ld.isUseEventServer) {
           NVR.debug ('push: ios, setting badge alarm count at start');
-          window.FirebasePlugin.getBadgeNumber(function(cnt) {
-            if (cnt) {
-              NVR.debug('push: ios, badge is:'+cnt);
-              $rootScope.isAlarm = 1;
-              $rootScope.alarmCount = cnt;
-              if ($rootScope.alarmCount > 99) {
-                $rootScope.alarmCount = '99+';
-              }
+          
+          if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            import('@capacitor/app').then(function(App) {
+              App.App.getBadgeCount().then(function(result) {
+                var cnt = result.count;
+                if (cnt) {
+                  NVR.debug('Capacitor push: ios, badge is:'+cnt);
+                  $rootScope.isAlarm = 1;
+                  $rootScope.alarmCount = cnt;
+                  if ($rootScope.alarmCount > 99) {
+                    $rootScope.alarmCount = '99+';
+                  }
+                }
+              }).catch(function(error) {
+                NVR.debug('Capacitor push: getBadgeCount failed: ' + JSON.stringify(error));
+              });
+            }).catch(function(error) {
+              NVR.debug('Capacitor push: App import failed: ' + JSON.stringify(error));
+              fallbackToFirebaseBadge();
+            });
+          }
+          else {
+            fallbackToFirebaseBadge();
+          }
+          
+          function fallbackToFirebaseBadge() {
+            if (window.FirebasePlugin) {
+              window.FirebasePlugin.getBadgeNumber(function(cnt) {
+                if (cnt) {
+                  NVR.debug('Firebase push: ios, badge is:'+cnt);
+                  $rootScope.isAlarm = 1;
+                  $rootScope.alarmCount = cnt;
+                  if ($rootScope.alarmCount > 99) {
+                    $rootScope.alarmCount = '99+';
+                  }
+                }
+              });
             }
-          });
+          }
         }
       } // ios
-      //
-      // called when token is assigned
-      window.FirebasePlugin.onTokenRefresh(
-        function (token) {
-          NVR.debug("push: got token:"+token);
-          $rootScope.apnsToken = token;
-          NVR.debug ('push: setting up onMessageReceived...');
-          window.FirebasePlugin.onMessageReceived(function(message) {
+      if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        import('@capacitor/push-notifications').then(function(PushNotifications) {
+          // Capacitor token registration
+          PushNotifications.PushNotifications.addListener('registration', function(token) {
+            NVR.debug("Capacitor push: got token:" + token.value);
+            $rootScope.apnsToken = token.value;
+            NVR.debug('Capacitor push: setting up message listeners...');
+          });
+          
+          PushNotifications.PushNotifications.addListener('registrationError', function(error) {
+            NVR.debug('Capacitor push: Error getting token:' + JSON.stringify(error));
+          });
+          
+          PushNotifications.PushNotifications.addListener('pushNotificationReceived', function(message) {
             $ionicPlatform.ready(function () {
 
-              NVR.debug("push: EventServer: received push notification with payload:"+JSON.stringify(message));
+              NVR.debug("Capacitor push: EventServer: received push notification with payload:"+JSON.stringify(message));
 
               if ($rootScope.platformOS != 'desktop') {
-                NVR.debug ("push: clearing badge");
-                window.FirebasePlugin.setBadgeNumber(0);
+                NVR.debug ("Capacitor push: clearing badge");
+                import('@capacitor/app').then(function(App) {
+                  App.App.setBadgeCount({ count: 0 });
+                }).catch(function(error) {
+                  NVR.debug('Capacitor push: setBadgeCount failed: ' + JSON.stringify(error));
+                });
               }
               
               var ld = NVR.getLogin();
@@ -602,9 +676,14 @@ angular.module('zmApp.controllers')
                 badge: 0,
               });
               var mid;
-              var eid = message.eid;
-              if (message.mid) {
+              var eid = message.data ? message.data.eid : message.eid;
+              if (message.data && message.data.mid) {
+                mid = message.data.mid;
+              } else if (message.mid) {
                 mid = message.mid;
+              }
+              
+              if (mid) {
                 var mi = mid.indexOf(',');
                 if (mi > 0) {
                   mid = mid.slice(0, mi);
@@ -612,7 +691,8 @@ angular.module('zmApp.controllers')
                 mid = parseInt(mid);
               }
               
-              if (message.tap=='foreground') {
+              var messageType = 'foreground';
+              if (messageType == 'foreground') {
                 console.log ('push: Foreground');
                 $rootScope.tappedNotification = 0;
                 $rootScope.tappedEid = 0;
@@ -631,7 +711,7 @@ angular.module('zmApp.controllers')
                 }
                 $rootScope.isAlarm = 1;
 
-              } else if (message.tap == 'background') {
+              } else if (messageType == 'background') {
                 $rootScope.alarmCount = "0";
                 $rootScope.isAlarm = 0;
                 $rootScope.tappedNotification = 1;
@@ -653,10 +733,153 @@ angular.module('zmApp.controllers')
 
             }); // ready
           });
-        }, 
-        function (err) {
-          NVR.debug ('push: Error getting token:'+err);
+          
+          PushNotifications.PushNotifications.addListener('pushNotificationActionPerformed', function(notification) {
+            $ionicPlatform.ready(function () {
+              NVR.debug("Capacitor push: EventServer: notification tapped with payload:"+JSON.stringify(notification));
+              
+              var message = notification.notification;
+              var mid;
+              var eid = message.data ? message.data.eid : message.eid;
+              if (message.data && message.data.mid) {
+                mid = message.data.mid;
+              } else if (message.mid) {
+                mid = message.mid;
+              }
+              
+              if (mid) {
+                var mi = mid.indexOf(',');
+                if (mi > 0) {
+                  mid = mid.slice(0, mi);
+                }
+                mid = parseInt(mid);
+              }
+              
+              var ld = NVR.getLogin();
+              if (ld.isUseEventServer == false) {
+                NVR.debug("Capacitor push: EventServer: received push notification, but event server disabled. Not acting on it");
+                return;
+              }
+              
+              sendMessage('push', {
+                type: 'badge',
+                badge: 0,
+              });
+              
+              $rootScope.alarmCount = "0";
+              $rootScope.isAlarm = 0;
+              $rootScope.tappedNotification = 1;
+              $rootScope.tappedMid = mid;
+              $rootScope.tappedEid = eid;
+              NVR.log("Capacitor push: EventServer: Push notification: Tapped Monitor taken as:" + $rootScope.tappedMid);
+
+              $timeout ( function () {
+                NVR.debug ("Capacitor push: EventServer: broadcasting process-push");
+                $rootScope.$broadcast('process-push');
+              },100);
+            }); // ready
+          });
+          
+        }).catch(function(error) {
+          NVR.debug('Capacitor push: Setup failed, falling back to Firebase: ' + JSON.stringify(error));
+          setupFirebaseTokenHandling();
         });
+      }
+      else {
+        setupFirebaseTokenHandling();
+      }
+      
+      function setupFirebaseTokenHandling() {
+        if (window.FirebasePlugin) {
+          NVR.debug("Firebase push: Setting up token and message handling");
+          //
+          // called when token is assigned
+          window.FirebasePlugin.onTokenRefresh(
+            function (token) {
+              NVR.debug("Firebase push: got token:"+token);
+              $rootScope.apnsToken = token;
+              NVR.debug ('Firebase push: setting up onMessageReceived...');
+              window.FirebasePlugin.onMessageReceived(function(message) {
+                $ionicPlatform.ready(function () {
+
+                  NVR.debug("Firebase push: EventServer: received push notification with payload:"+JSON.stringify(message));
+
+                  if ($rootScope.platformOS != 'desktop') {
+                    NVR.debug ("Firebase push: clearing badge");
+                    window.FirebasePlugin.setBadgeNumber(0);
+                  }
+                  
+                  var ld = NVR.getLogin();
+                  if (ld.isUseEventServer == false) {
+                    NVR.debug("Firebase push: EventServer: received push notification, but event server disabled. Not acting on it");
+                    return;
+                  }
+                  NVR.debug('Firebase push: Message type received is:'+message.messageType);
+                  
+                  sendMessage('push', {
+                    type: 'badge',
+                    badge: 0,
+                  });
+                  var mid;
+                  var eid = message.eid;
+                  if (message.mid) {
+                    mid = message.mid;
+                    var mi = mid.indexOf(',');
+                    if (mi > 0) {
+                      mid = mid.slice(0, mi);
+                    }
+                    mid = parseInt(mid);
+                  }
+                  
+                  if (message.tap=='foreground') {
+                    console.log ('Firebase push: Foreground');
+                    $rootScope.tappedNotification = 0;
+                    $rootScope.tappedEid = 0;
+                    $rootScope.tappedMid = 0;
+
+                    if (ld.soundOnPush) {
+                      media.play({
+                        playAudioWhenScreenIsLocked: false
+                      });
+                    }
+                    if ($rootScope.alarmCount == "99") {
+                      $rootScope.alarmCount = "99+";
+                    }
+                    if ($rootScope.alarmCount != "99+") {
+                      $rootScope.alarmCount = (parseInt($rootScope.alarmCount) + 1).toString();
+                    }
+                    $rootScope.isAlarm = 1;
+
+                  } else if (message.tap == 'background') {
+                    $rootScope.alarmCount = "0";
+                    $rootScope.isAlarm = 0;
+                    $rootScope.tappedNotification = 1;
+                    $rootScope.tappedMid = mid;
+                    $rootScope.tappedEid = eid;
+                    NVR.log("Firebase push: EventServer: Push notification: Tapped Monitor taken as:" + $rootScope.tappedMid);
+      
+                    $timeout ( function () {
+                      NVR.debug ("Firebase push: EventServer: broadcasting process-push");
+                      $rootScope.$broadcast('process-push');
+                    },100);
+      
+                  } else {
+                    NVR.debug ("Firebase push: message tap not defined");
+                    $rootScope.tappedNotification = 0;
+                    $rootScope.tappedEid = 0;
+                    $rootScope.tappedMid = 0;
+                  }
+
+                }); // ready
+              });
+            }, 
+            function (err) {
+              NVR.debug ('Firebase push: Error getting token:'+err);
+            });
+        } else {
+          NVR.debug('ERROR: Firebase Plugin not available');
+        }
+      }
 
       if (plat == 'ios') {
         mediasrc = "sounds/blop.mp3";
