@@ -48,7 +48,10 @@ jobs:
           echo "JAVA_HOME: $JAVA_HOME"
           echo "ANDROID_HOME: $ANDROID_HOME"
           cd android && ./gradlew --version
-      - run: npx cap build android
+      - name: Build Android Debug APK
+        run: |
+          cd android
+          ./gradlew assembleDebug
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
@@ -82,7 +85,10 @@ jobs:
           sed -i '' 's/DEVELOPMENT_TEAM = .*/DEVELOPMENT_TEAM = "";/g' ios/App/App.xcodeproj/project.pbxproj || true
           sed -i '' 's/CODE_SIGN_STYLE = Automatic/CODE_SIGN_STYLE = Manual/g' ios/App/App.xcodeproj/project.pbxproj || true
           sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = .*/PROVISIONING_PROFILE_SPECIFIER = "";/g' ios/App/App.xcodeproj/project.pbxproj || true
-      - run: npx cap build ios
+      - name: Build iOS Debug App
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -destination 'generic/platform=iOS Simulator' build
       - name: Upload iOS App
         uses: actions/upload-artifact@v4
         with:
