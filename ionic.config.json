@@ -1,7 +1,8 @@
 {
   "name": "zmNinja",
   "integrations": {
-    "cordova": {}
+    "cordova": {},
+    "capacitor": {}
   },
   "type": "ionic1",
   "proxies": [
@@ -22,9 +23,11 @@
     }
   ],
   "watchPatterns": [
-    "scss/**/*",
     "www/**/*",
     "!www/lib/**/*",
-    "!www/**/*.map"
-  ]
+    "!www/external/**/*"
+  ],
+  "serve": {
+    "port": 8100
+  }
 }

@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.zoneminder.zmNinja',
   appName: 'zmNinja',
-  webDir: 'www',
+  webDir: 'dist',
   server: {
     androidScheme: 'https'
   },
