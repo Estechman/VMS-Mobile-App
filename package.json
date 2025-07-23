@@ -140,7 +140,6 @@
     "cordova-plugin-cloud-settings": "^2.0.1",
     "cordova-plugin-file": "^8.1.3",
     "cordova-plugin-file-transfer": "github:apache/cordova-plugin-file-transfer",
-    "cordova-plugin-firebasex": "^18.0.5",
     "cordova-plugin-media": "^7.0.0",
     "cordova-plugin-photo-library-zm": "^3.0.6",
     "cordova-plugin-x-socialsharing": "github:SteveGilvarry/Cordova-plugin-socialsharing-zm",
