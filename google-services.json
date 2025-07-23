@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "625362857243",
+    "project_id": "zoneminder-ninja",
+    "storage_bucket": "zoneminder-ninja.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:625362857243:android:c81c1e1d6e31d22bd9f7be",
+        "android_client_info": {
+          "package_name": "com.zoneminder.zmNinja"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "625362857243-h1phf5lf80ckqv0nbspfji3g08trot6k.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtBQdDm4yzDZzjhKB0ojpYLKcbTXmZMyg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "625362857243-h1phf5lf80ckqv0nbspfji3g08trot6k.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "625362857243-6skuep7gb2j2dqk5qtk6kea2kbne88v7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.zoneminder.zmninja-pro"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

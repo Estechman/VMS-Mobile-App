@@ -1,0 +1,30 @@
+{
+    "ios": {
+        "debug": {
+            "codeSignIdentity": "Apple Development",
+            "developmentTeam": "P97TSUFFDX",
+            "packageType": "development",
+            "automaticProvisioning": true,
+            "buildFlag": [
+                "LD_RUNPATH_SEARCH_PATHS = \"@executable_path/Frameworks\""
+            ]
+        },
+        "release": {
+            "codeSignIdentity": "iPhone Developer",
+            "developmentTeam": "P97TSUFFDX",
+            "packageType": "app-store",
+            "automaticProvisioning": true,
+            "buildFlag": [
+                "LD_RUNPATH_SEARCH_PATHS = \"@executable_path/Frameworks\""
+            ]
+        }
+    },
+  "android": {
+    "debug": {
+      "packageType": "apk"
+    },
+    "release": {
+      "packageType": "bundle"
+    }
+  }
+}
