@@ -1,0 +1,41 @@
+<ion-view view-title="{{'kFilterEvents' | translate}}">
+  <ion-content delegate-handle="none" overflow-scroll="false" mouse-wheel-scroll class="notch-ready">
+    <label class="item item-input">
+      <span class="input-label">{{'kFromDate'|translate}}:</span>
+      <input type="date" ng-model="$root.fromDate" max={{today}}>
+    </label>
+    <label class="item item-input">
+      <span class="input-label">{{'kFromTime'|translate}}</span>
+      <input type="time" ng-model="$root.fromTime">
+    </label>
+    <label class="item item-input">
+      <span class="input-label">{{'kToDate'|translate}}</span>
+      <input type="date" ng-model="$root.toDate" max={{today}}>
+    </label>
+    <label class="item item-input">
+      <span class="input-label">{{'kToTime'|translate}}</span>
+      <input type="time" ng-model="$root.toTime">
+    </label>
+   
+    <ion-item class="custom-list" ng-click="toggleMonitors()">
+        <i class="icon" ng-class="monitorsExpanded ? 'ion-minus' : 'ion-plus'"></i> &nbsp;Filter Monitors
+      </ion-item>
+      <ion-item class="item-accordion" ng-show="monitorsExpanded" ng-repeat="monitor in monitors | filter:onlyUnhidden">
+        
+        <span class="item-checkbox">
+          {{monitor.Monitor.Name}}
+          <label class="checkbox">
+            <input type="checkbox" ng-model="monitor.Monitor.isChecked">
+          </label>
+        </span>
+      </ion-item>
+      <br/>
+   
+    <center>
+      <button class="button" ng-click="saveFilters();"> {{'kSave'|translate}}
+      </button>
+      <button class="button" ng-click="removeFilters();"> {{'kReset'|translate}}
+      </button>
+    </center>
+  </ion-content>
+</ion-view>

@@ -1,0 +1,151 @@
+<div ng-controller="MonitorModalCtrl" ng-cloak>
+  <ion-modal-view cache-view="false" style="background-color:#444444">
+    <ion-content ng-cloak on-double-tap="closeModal();" scroll="false" class="notch-ready">
+
+      <div id="imagecontainer">
+        <ion-scroll on-scroll="checkZoom()" delegate-handle="imgscroll" has-bouncing=false min-zoom="1"
+          zooming="true" max-zoom="50" direction="xy" style="width: 100%;" overflow-scroll="false">
+          <!-- android needs this 100vh - otherwise max- does not work -->
+          <!--  -->
+
+          <div id="monitorimage" style="height: 100vh;" class="main">
+            
+              <div ng-if="!animationInProgress">
+
+                <!--<span style="color:white">{{currentStreamMode}}</span>-->
+                
+             
+
+                <img id="singlemonitor" style="width:100vw; height:100vh;" image-spinner-loader="lines"
+                  image-spinner-src="{{constructSingleStream()}}" ng-class="{'object-fit_cover':imageFit==false, 'object-fit_contain':imageFit==true}"
+                  on-swipe-left="onSwipe(monitorId,1)" on-swipe-right="onSwipe(monitorId,-1)" on-double-tap="closeModal();"
+                  on-tap="showHideControls();"
+                  imageonload="imageLoaded();"
+		  image-on-error="processImageError(this);"
+		  />
+
+              </div>
+              <div ng-if="animationInProgress">
+                <img style="width:100vw; height:100vh" ng-src="img/noimage.png" class="object-fit_contain" />
+              </div>
+           
+           
+              <img id="singlemonitor" ng-src="img/noimage.png" style="width:100vw; height:100vh; display:block;"
+                class="object-fit_contain" width="{{((devWidth)/(7-monitorSize[$index]))}}px;" />
+           
+          </div>
+        </ion-scroll>
+
+
+      </div>
+    </ion-content>
+
+
+    <div ng-show="isControllable=='1' && showPTZ">
+      <div class="ptzcentered">
+        <circular options="ptzRadialMenuOptions">
+        </circular>
+      </div>
+      <div ng-if="presetOn" class="ptzpresetbuttons animated fadeInDown" id="presetlist">
+        <ion-scroll ng-if="ptzButtonsShown" style="height:170px">
+          <div ng-repeat="preset in ptzPresets track by $index">
+            <button class="button {{preset.icon}} button-small {{preset.style}}" style="float:left;margin-right:10px;margin-bottom:10px;"
+              ng-click="controlPTZ(monitorId, preset.cmd);">{{preset.name}}</button>
+          </div>
+        </ion-scroll>
+
+        <button ng-if="!ptzButtonsShown" class="button {{ptzPresets[0].icon}} button-small {{ptzPresets[0].style}}"
+          style="float:left;margin-right:10px;margin-bottom:10px;" ng-click="controlPTZ(monitorId, ptzPresets[0].cmd);">{{ptzPresets[0].name}}</button>
+
+
+      </div>
+      <div class="ptzcenteredbotbutton">
+        <div ng-if="canZoom">
+          <a class="button button-small icon ion-search button-positive" href="" ng-click="controlPTZ(monitorId, zoomInCommand);">+</a>
+          <a class="button button-small icon ion-search button-positive" href="" ng-click="controlPTZ(monitorId, zoomOutCommand);">-</a>
+          <a class="button button-small icon ion-search button-positive" href="" ng-click="controlPTZ(monitorId, zoomStopCommand);">x</a>
+        </div>
+        <br />
+        <a class="button button-small icon ion-stop  button-assertive" href="" ng-click="controlPTZ(monitorId, ptzStopCommand);"></a>
+        <a class="button button-small button-royal" href="" ng-click="togglePresets();">{{controlToggle}}</a>
+      </div>
+    </div>
+  </ion-modal-view>
+
+  <nav ng-if="displayControls" id='testaut_monitormodal_nav_button' mfb-menu position="tr" effect="zoomin" label="{{'kCollapse' | translate}}" active-icon="ion-chevron-up"
+    resting-icon="ion-chevron-down" toggling-method="click">
+    <button mfb-button icon="ion-arrow-resize" label="{{imageFit? ('kFillScreen' | translate):('kFitScreen' | translate)}}"
+      ng-click="scaleImage();">
+    </button>
+    <button mfb-button icon="ion-refresh" label="{{'kRefresh' | translate}}" ng-click="reloadView();">
+    </button>
+    <button mfb-button icon="ion-arrow-expand" label="{{'kControl'| translate}}" ng-click="togglePTZ();">
+    </button>
+  </nav>
+  <nav ng-if="displayControls"  mfb-menu position="br" effect="zoomin" label="{{'kCollapse' | translate}}" active-icon="ion-chevron-down"
+    resting-icon="ion-chevron-up" toggling-method="click">
+    <button mfb-button icon="ion-android-arrow-back" label="{{'kPrevMonitor' | translate}} " ng-click="onTap(monitorId,-1);">
+    </button>
+    <button mfb-button icon="ion-android-arrow-forward" label="{{'kNextMonitor' | translate}}" ng-click="onTap(monitorId,1);">
+    </button>
+    <button id='testaut_monitormodal_nav_exit_button' mfb-button icon="ion-close" label="{{'kExitLiveView' | translate}}" ng-click="closeModal();">
+    </button>
+  </nav>
+  <div id="flyoutmenu" ng-if="displayControls" style="position:absolute;bottom:80px;left:10px">
+    <ul>
+
+      <li>
+        <a href="" ng-click="toggleListMenu()">&nbsp;
+          <i ng-class="(isToggleListMenu) ? 'icon  ion-chevron-left': 'icon ion-chevron-right'"></i>&nbsp;</a>
+      </li>
+
+      <li ng-if="isToggleListMenu">
+        <a id='testaut_monitormodal_camera_button' href="" ng-click="saveLiveImageToPhoneWithPerms(monitorId)">
+          <i class="icon  ion-ios-camera"></i>
+        </a>
+      </li>
+      <li ng-if="$root.platformOS == 'desktop' && isToggleListMenu">
+        <a href="" ng-click="zoomImage(1)">
+          <i class="ion-plus-round"></i>
+        </a>
+      </li>
+      <li ng-if="$root.platformOS == 'desktop' && isToggleListMenu">
+        <a href="" ng-click="zoomImage(-1)">
+          <i class="ion-minus-round"></i>
+        </a>
+      </li>
+      <li ng-if="isToggleListMenu">
+        <a href="" ng-click="triggerAlarm(monitorId,'on')">
+          <i class="icon  ion-flash"></i>
+        </a>
+      </li>
+      <li ng-if="isToggleListMenu">
+        <a href="" ng-click="triggerAlarm(monitorId,'off')">
+          <i class="icon  ion-flash-off"></i>
+        </a>
+      </li>
+
+  
+      <li ng-if="isToggleListMenu" ng-style="{'background-color': isCycle?'rgba(69, 170, 242,0.7)':'rgba(108, 122, 137, 0.7)'}">
+        <a href="" ng-click="toggleCycle()">
+          <i class="icon  ion-android-bicycle"></i>-{{cycleText}}</a>
+      </li>
+
+
+
+      <!--<li>
+            
+            <a href="" ng-click="cast(monitorId, monitor)"> <i class="icon  ion-android-funnel"></i></a>
+        </li>-->
+      <li ng-if="$root.isAlarm">
+        <a data-badge="{{$root.alarmCount}}" class="notification-badge animated infinite tada" href="" ng-click="handleAlarms()">
+          <i class="ion-ios-bell"></i>
+        </a>
+      </li>
+    </ul>
+  </div>
+  <div ng-if="!showPTZ && displayControls" class="monitor-modal-text">{{monitorName}} &nbsp;
+    <i ng-if="streamState=='bad'" class="animated infinite flash ion-alert-circled assertive"></i>
+    <span ng-style="{'background-color':stateColor()}">&nbsp;{{monStatus}}&nbsp;</span>
+  </div>
+</div>

@@ -1,0 +1,144 @@
+<ion-view view-title="{{'kSystemStatus' | translate}}" cache-view="false">
+  <ion-nav-buttons side="left">
+    <button class="button button-icon button-clear ion-navicon" ng-click="openMenu()"></button>
+    <button data-badge="{{$root.alarmCount}}" class="animated infinite tada button button-icon button-clear ion-ios-bell notification-badge"
+      ng-click="handleAlarms();" ng-if="$root.isAlarm"></button>
+  </ion-nav-buttons>
+  <ion-content delegate-handle="none" overflow-scroll="false" mouse-wheel-scroll class="notch-ready" >
+    <ion-refresher pulling-text="{{'kPullToReload' | translate}}..." spinner="bubbles" on-refresh="doRefresh()"></ion-refresher>
+
+    <ion-item>
+
+      <div>
+        <div class="row">
+          <div class="col text-center">
+            <a class="button button-small button-outline button-dark " ng-click="selectCustomState();" href="">{{'kChangeState'|translate}}</a>
+            <a id="testaut_state_restart_button" class="button  button-small button-outline button-dark " ng-click="controlZM('restart');" href="">{{'kRestart'
+              | translate}}</a>
+            <a class="button  button-small button-outline  button-dark" href="" ng-click="controlZM('stop');">{{'kStop'
+              | translate}}</a>
+            <a class="button  button-small button-outline button-dark" ng-click="controlZM('start');" href="">{{'kStart'
+              | translate}}</a>
+          </div>
+        </div>
+      </div>
+    </ion-item>
+
+
+    <ion-list>
+      <ion-item>
+        <div class="row">
+          <div class="col col-10">
+            <i class="ion-home" style="font-size:150%;"></i>
+          </div>
+          <div class="col">
+            ZoneMinder:
+          </div>
+
+          <div class="col" ng-style="{'text-align':'right','color':color}">
+            {{zmRun}}
+            <p>{{customState}}</p>
+          </div>
+        </div>
+      </ion-item>
+      <ion-item>
+        <div class="row">
+          <div class="col col-10">
+            <i class="ion-arrow-graph-up-right" style="font-size:150%;"></i>
+          </div>
+          <div class="col">
+            ZoneMinder {{'kLoad' | translate}}:
+          </div>
+          <div class="col" style="text-align:right;">
+            {{zmLoad}}
+          </div>
+        </div>
+      </ion-item>
+    
+      <ion-item>
+        <div class="row">
+          <div class="col col-10">
+            <button ng-click="restartEventServer()" class="button button-small icon ion-loop"></button>
+          </div>
+          <div class="col">
+            {{'kEventServer' | translate}}: 
+          </div>
+          <div class="col"  ng-style="{'text-align':'right'}">
+           {{getEventServerState()}}
+          </div>
+        </div>
+      </ion-item>
+    </ion-list>
+
+   
+ 
+      <div class="list" >
+
+           <!-- Storage -->
+        <div class="item item-divider item-icon-left item-icon-right" ng-click="toggleStorage()">
+            <i class="icon"  ng-class="showStorage? 'ion-minus':'ion-plus'"></i>
+            <i class="icon ion-social-buffer"></i>
+          {{'kStateStorage' | translate}}
+        </div>
+        <div  ng-repeat = "store in storage">
+          <div class="item item-accordion item-divider" ng-show="showStorage">
+              
+              {{store.Storage.Name}} ({{store.Storage.Id}}) 
+          </div> <!-- divider -->
+          <div class="item item-accordion" ng-show="showStorage">
+   
+              <div class="row" style="font-size:80%;line-height:140%;">
+                  {{'kStatePath' | translate }}: {{store.Storage.Path}}
+              </div>
+              <div class="row" style="font-size:80%;line-height:140%;">
+                  {{'kStateDiskUsed' | translate }}: {{ humanFileSize(store.Storage.DiskSpace,true)}}
+              </div>
+              <div class="row" style="font-size:80%;line-height:140%;">
+                  {{'kScheme' | translate }}: {{ store.Storage.Scheme}}
+              </div>
+              <div ng-if="store.Storage.ServerId" class="row" style="font-size:80%;line-height:140%;">
+                  {{'kStateServer' | translate }}: {{ matchServer(store.Storage.ServerId)}}
+              </div>
+       
+          </div> <!-- item -->
+        </div> <!-- repeat -->
+ 
+        <!-- server -->
+          <div class="item item-divider item-icon-left item-icon-right" ng-click="toggleServer()">
+              <i class="icon"  ng-class="showServer? 'ion-minus':'ion-plus'"></i>
+              <i class="icon ion-monitor"></i>
+            {{'kStateServer' | translate}}
+          </div>
+          <div  ng-repeat = "server in servers">
+            <div class="item item-accordion item-divider" ng-show="showServer">
+                
+                {{server.Server.Name}} ({{server.Server.Id}}) 
+            </div> <!-- divider -->
+            <div class="item item-accordion" ng-show="showServer">
+        
+                <div class="row" style="font-size:80%;line-height:140%;">
+                    {{'kStateHost' | translate }}: {{server.Server.Hostname}}
+                </div>
+                <div class="row" style="font-size:80%;line-height:140%;">
+                    {{'kStatus' | translate }}: {{ server.Server.Status}}
+                </div>
+                <div class="row" style="font-size:80%;line-height:140%;">
+                    {{'kStateCpuLoad' | translate }}: {{ server.Server.CpuLoad}}
+                </div>
+                <div class="row" style="font-size:80%;line-height:140%;">
+                    {{'kStateTotalMem' | translate }}: {{ humanFileSize(server.Server.TotalMem, true)}}
+                </div>
+                <div class="row" style="font-size:80%;line-height:140%;">
+                    {{'kStateFreeMem' | translate }}: {{ humanFileSize(server.Server.FreeMem, true)}}
+                </div>
+        
+            </div> <!-- item -->
+          </div> <!-- repeat -->
+        </div> <!-- list ---->
+    
+
+
+ 
+
+  </ion-content>
+</ion-view>

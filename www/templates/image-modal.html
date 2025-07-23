@@ -1,0 +1,13 @@
+<ion-modal-view cache-view="false" style="background-color:#444444">
+  <ion-content ng-cloak on-double-tap="closeModal();" scroll="false" class="notch-ready">
+
+
+    <div id="imagecontainer">
+      <ion-scroll has-bouncing=false min-zoom=1 zooming="true" direction="xy" style="width: 100%;" overflow-scroll="false">
+        <img on-double-tap="closeModal();" ng-src="{{thumbnailLarge}}" style="display:block; width:100%;" />
+
+      </ion-scroll>
+    </div>
+
+  </ion-content>
+</ion-modal-view>

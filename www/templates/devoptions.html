@@ -1,0 +1,320 @@
+<ion-view view-title="{{'kDevOptions' | translate}}">
+  <ion-nav-buttons side="left">
+    <button id="devoptions-move-1" class="button button-icon button-clear ion-navicon" ng-click="openMenu()"></button>
+    &nbsp;
+    <button data-badge="{{$root.alarmCount}}" class="animated infinite tada button button-icon button-clear ion-ios-bell notification-badge"
+      ng-click="handleAlarms();" ng-if="$root.isAlarm"></button>
+  </ion-nav-buttons>
+  <ion-nav-buttons side="right">
+    <button id="devoptions-move-2" class="button button-clear" ng-click="saveDevOptions()">{{'kSave' | translate}}</button>
+  </ion-nav-buttons>
+  <ion-content delegate-handle="none" overflow-scroll="false" mouse-wheel-scroll class="notch-ready">
+    <div class="list list-inset">
+      <span style="color:rgb(100,100,100)">
+        <i class="ion-android-settings" style="font-size:150%"></i> {{'kDeveloperOptionsFor'|translate}}
+        {{loginData.serverName}}
+      </span>
+      <div class="item item-input-inset item-text-wrap">
+        {{'kFrameUpdate'|translate}} ({{'kSec'|translate}}.)&nbsp;
+        <label class="item-input-wrapper">
+          <input id="devoptions-move-3" type="tel" placeholder="min is 1s" ng-model="loginData.refreshSec">
+        </label>
+      </div>
+
+      <div class="item item-input-inset item-text-wrap">
+        {{'kMontageLiveViewFPS'|translate}} ({{'kSec'|translate}}.)&nbsp;
+       
+          <label class="item-input-wrapper">
+            <input  type="tel" placeholder="leave empty for auto" ng-model="loginData.montageliveFPS">
+          </label>
+        
+      </div>
+
+      <div class="item item-input-inset item-text-wrap">
+        {{'kSingleLiveViewFPS'|translate}} ({{'kSec'|translate}}.)&nbsp;
+       
+          <label class="item-input-wrapper">
+            <input id="devoptions-move-3_1" type="tel" placeholder="leave empty for auto" ng-model="loginData.singleliveFPS">
+          </label>
+        
+      </div>
+
+      <label>
+        <ion-toggle id="devoptions-move-4" ng-model="loginData.use24hr" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kEnable24hr' | translate}}</span>
+        </ion-toggle>
+      </label>
+      <label>
+        <ion-toggle ng-model="loginData.useLocalTimeZone" ng-disabled="!isTzSupported()" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kLocalTimeZone' | translate}}
+            <span ng-if="!isTzSupported()">
+              <p>{{'kTimeZoneNotSupported' | translate}}</p>
+            </span>
+            <span ng-if="isTzSupported()">
+              <p>{{'kServerTimeZone' | translate}}:{{getTimeZoneNow()}}</p>
+            </span>
+          </span>
+        </ion-toggle>
+      </label>
+
+      <label>
+        <ion-toggle ng-model="loginData.showLiveForInProgressEvents" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kShowLiveForInProgress' | translate}}</span>
+        </ion-toggle>
+      </label>
+
+      
+      <label>
+            <ion-toggle ng-model="loginData.enableMontageOverlays" toggle-class="toggle-calm">
+              <span class="item-text-wrap">{{'kMontageEnableOverlays' | translate}}</span>
+            </ion-toggle>
+        </label>
+
+        <label>
+            <ion-toggle ng-model="loginData.showMontageSidebars" toggle-class="toggle-calm">
+              <span class="item-text-wrap">{{'kMontageShowSidebars' | translate}}
+                <p>{{'kMontageShowSidebarsNote' | translate}}</p>
+              </span>
+            </ion-toggle>
+        </label>
+
+
+      <!--
+      <div ng-if="$root.platformOS=='android'">
+        <label>
+          <ion-toggle ng-model="loginData.exitOnSleep" toggle-class="toggle-calm">
+            <span class="item-text-wrap">{{'kExitAppBackground' | translate}}</span>
+          </ion-toggle>
+        </label>
+      </div>
+    -->
+
+
+      <div class="item item-text-wrap item-input-inset">
+        {{'kMaxMonitorsMontage' | translate }}&nbsp;
+        <label class="item-input-wrapper">
+          <input type="tel" placeholder="{{'kBeCareful' | translate}}" ng-model="loginData.maxMontage">
+        </label>
+      </div>
+      <!--
+            <div class="item item-input-inset">
+                maxfps for streaming&nbsp;
+                <label class="item-input-wrapper">
+                    <input type="tel" placeholder="max is 30" ng-model="loginData.maxFPS">
+                </label>
+            </div>
+            -->
+      <div class="item item-text-wrap item-input-inset">
+        {{'kMontageImageScale' | translate}}(%)&nbsp;
+        <label class="item-input-wrapper">
+          <input type="tel" placeholder="max is 70" ng-model="loginData.montageQuality">
+        </label>
+      </div>
+
+      <div class="item item-text-wrap item-input-inset">
+        {{'kMontageResizeSteps' | translate}}(%)&nbsp;
+        <label class="item-input-wrapper">
+          <input type="tel" placeholder="" ng-model="loginData.montageResizeSteps">
+        </label>
+      </div>
+
+      <div class="item item-text-wrap item-input-inset">
+        {{'kEventSingleImageScale' | translate}}(%)&nbsp;
+        <label class="item-input-wrapper">
+          <input type="tel" placeholder="" ng-model="loginData.singleImageQuality">
+        </label>
+      </div>
+      <div class="item item-text-wrap item-input-inset">
+        {{'kMonitorSingleImageScale' | translate}}(%)&nbsp;
+        <label class="item-input-wrapper">
+          <input type="tel" placeholder="" ng-model="loginData.monSingleImageQuality">
+        </label>
+      </div>
+      <!--<div class="item item-input-inset">
+                {{'kResumeDelay' | translate}}(ms)&nbsp;
+                <label class="item-input-wrapper">
+                    <input type="tel" placeholder="" ng-model="loginData.resumeDelay">
+
+                </label>
+
+            </div>-->
+      <div class="item item-text-wrap item-input-inset">
+        {{'kEventMontageImageScale'|translate}}(%)&nbsp;
+        <label class="item-input-wrapper">
+          <input type="tel" placeholder="" ng-model="loginData.montageHistoryQuality">
+        </label>
+      </div>
+      <div class="item item-text-wrap item-input-inset">
+        {{'kMaxItemsForTimeline' | translate}}&nbsp;
+        <label class="item-input-wrapper">
+          <input type="tel" placeholder="" ng-model="loginData.graphSize">
+          <br />
+        </label>
+        <br />
+      </div>
+      <div class="item item-text-wrap item-input-inset">
+        {{'kMinAlarmCount' | translate}}&nbsp;
+        <label class="item-input-wrapper">
+          <input type="tel" placeholder="" ng-model="loginData.minAlarmCount">
+          <br />
+        </label>
+        <br />
+      </div>
+      <div class="item" style="background-color:#C8F7C5" ng-if="loginData.graphSize > 5000">
+        <label class="animated fadeInDown item-text-wrap">
+          {{'kWarningLargeTimeline' | translate}}
+        </label>
+      </div>
+
+      <label>
+        <ion-toggle ng-model="loginData.retrieveFramesForEvents" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kEventRetrieveFrames' | translate}}
+            <span class="item-text-wrap">
+              <p>{{'kEventRetrieveFramesSub' | translate}}</p>
+            </span>
+          </span>
+        </ion-toggle>
+      </label>
+      <label>
+        <ion-toggle ng-model="loginData.hideArchived" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kHideArchived' | translate}}
+          </span>
+        </ion-toggle>
+      </label>
+
+      <label ng-if="$root.platformOS!='desktop'">
+        <ion-toggle ng-model="loginData.enableStrictSSL" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kEnableStrictSSL' | translate}}
+
+          </span>
+        </ion-toggle>
+      </label>
+
+      <label>
+        <div class="item item-button-right">
+          {{'kEnableThumbs' | translate}}: <button class="button button-calm" ng-click="selectEventViewThumbs()">
+            <i class="icon ion-gear-b"></i>
+          </button>
+          <p>{{loginData.eventViewThumbs}}</p>
+        </div>
+      </label>
+
+      <label>
+        <div class="item item-button-right">
+          {{'kEventViewThumbsSize' | translate}}: <button class="button button-calm" ng-click="selectEventViewThumbsSize()">
+            <i class="icon ion-gear-b"></i>
+          </button>
+          <p>{{loginData.eventViewThumbsSize}}</p>
+        </div>
+      </label>
+
+      <label>
+        <ion-toggle ng-model="loginData.montageHideFooter" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kMontageHideFooter' | translate}}
+          </span>
+        </ion-toggle>
+      </label>
+
+      <label>
+        <ion-toggle ng-model="loginData.enableEventRefresh" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kEnableEventRefresh' | translate}}
+          </span>
+        </ion-toggle>
+      </label>
+
+      <label>
+        <ion-toggle ng-model="loginData.enableSlowLoading" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kEnableSlowLoading' | translate}}
+          </span>
+        </ion-toggle>
+      </label>
+
+      <label>
+        <ion-toggle ng-model="loginData.disableAlarmCheckMontage" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kDisableAlarmMontage' | translate}}
+            <p>{{'kDisableAlarmMontageSub' | translate}}</p>
+          </span>
+        </ion-toggle>
+      </label>
+
+      <label>
+        <ion-toggle ng-model="loginData.insertBasicAuthToken" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kInsertBasicAuthToken' | translate}}
+            <p>{{'kInsertBasicAuthTokenNote' | translate}}</p>
+          </span>
+        </ion-toggle>
+      </label>
+
+      <label ng-if="isMultiPort">
+        <ion-toggle ng-model="loginData.disableSimulStreaming" ng-change="checkMultiPortToggle()" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kDisableSimulStreaming' | translate}}
+            <p ng-if="$root.platformOS=='ios'">{{'kDisableSimulStreamingNote' | translate}}</p>
+          </span>
+        </ion-toggle>
+      </label>
+
+      <label>
+        <ion-toggle ng-model="loginData.useAPICaching" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kUseAPICaching' | translate}}</span>
+        </ion-toggle>
+      </label>
+
+      <label>
+        <ion-toggle ng-model="loginData.showAnimation" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kShowAnimation' | translate}}</span>
+          <p>{{'kShowAnimationNote' | translate}}</p>
+        </ion-toggle>
+      </label>
+
+      <label>
+        <div class="item item-button-right">
+          {{'kObfuscation' | translate}}: {{loginData.obfuscationScheme}}<button class="button button-calm" ng-click="selectObfuscationScheme()">
+            <i class="icon ion-gear-b"></i>
+          </button>
+        </div>
+      </label>
+     
+
+
+      <label>
+        <ion-toggle ng-model="loginData.enableLogs" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kEnableLogs' | translate}}</span>
+        </ion-toggle>
+      </label>
+
+      <label>
+        <ion-toggle ng-if="loginData.enableLogs" ng-model="loginData.enableDebug" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kEnableDebug' | translate}}</span>
+        </ion-toggle>
+      </label>
+
+      <label>
+        <ion-toggle ng-if="$root.platformOS!='desktop'" ng-model="loginData.httpCordovaNoEncode" toggle-class="toggle-calm">
+          <span class="item-text-wrap">{{'kHTTPCordovaNoEncode' | translate}}</span>
+        </ion-toggle>
+      </label>
+
+      <div class="item item-text-wrap item-input-inset">
+        {{'kCycleMonitorsInterval'|translate}}({{'kSec'|translate}}.)&nbsp;
+        <label class="item-input-wrapper">
+          <input type="tel" placeholder="" ng-model="loginData.cycleMonitorsInterval">
+        </label>
+      </div>
+
+      <div class="item item-text-wrap item-input-inset">
+        {{'kCycleMontageInterval'|translate}}({{'kSec'|translate}}.)&nbsp;
+        <label class="item-input-wrapper">
+          <input type="tel" placeholder="" ng-model="loginData.cycleMontageInterval">
+        </label>
+      </div>
+
+      <div class="item item-text-wrap item-input-inset">
+        {{'kCustomId'|translate}}&nbsp;
+        <label class="item-input-wrapper">
+          <input type="tel" placeholder="" ng-model="loginData.zmNinjaCustomId" ng-change="useDefaultCustom()">
+        </label>
+      </div>
+
+    </div>
+  </ion-content>
+</ion-view>

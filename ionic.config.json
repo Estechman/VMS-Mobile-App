@@ -1,0 +1,33 @@
+{
+  "name": "zmNinja",
+  "integrations": {
+    "cordova": {},
+    "capacitor": {}
+  },
+  "type": "ionic1",
+  "proxies": [
+    {
+      "path": "/zm",
+      "proxyUrl": "yourpath1",
+      "rejectUnauthorized": false
+    },
+    {
+      "path": "/zm2",
+      "proxyUrl": "yourpath2",
+      "rejectUnauthorized": false
+    },
+    {
+      "path": "/zm3",
+      "proxyUrl": "yourpath3",
+      "rejectUnauthorized": false
+    }
+  ],
+  "watchPatterns": [
+    "www/**/*",
+    "!www/lib/**/*",
+    "!www/external/**/*"
+  ],
+  "serve": {
+    "port": 8100
+  }
+}

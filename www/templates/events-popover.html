@@ -1,0 +1,29 @@
+<ion-popover-view class="fit">
+  <ion-content class="notch-ready">
+    <div class="list" ng-click="popover.hide()">
+      <a class="item" ng-href="" ng-click="popover.hide();$state.go('app.events-date-time-filter');">{{'kFilterByDateTime'
+        | translate}}</a>
+      <!-- <a class="item" ng-href="" ng-click=" popover.hide();$state.go('events-graphs');" >
+              Event Graphs
+            </a>-->
+      <a class="item" style="text-transform:capitalize;" ng-href="" ng-click="popover.hide();toggleThumbSize();doRefresh();">
+        {{'kEventViewThumbsSize' | translate}}: {{nextThumbSizeOptions[loginData.eventViewThumbsSize]}}
+      </a>
+      <a class="item" ng-href="" ng-click="popover.hide();doRefresh();">
+        {{'kRefresh' | translate}}
+      </a>
+      <a class="item" ng-href="" ng-click="popover.hide();toggleMinAlarmFrameCount();" ng-if="loginData.enableAlarmCount">{{'kShowAllEvents'
+        | translate}}</a>
+
+      <a class="item" ng-href="" ng-click="popover.hide();toggleMinAlarmFrameCount();" ng-if="!loginData.enableAlarmCount">
+        {{'kShowAlarmedEvents' | translate}}</a>
+
+      <a class="item" ng-href="" ng-click="popover.hide();toggleObjectDetectionFilter();" > <i ng-if="loginData.objectDetectionFilter" class="ion-record" style="color:green;">&nbsp;</i> {{'kShowObjectDetectionEvents'
+          | translate}}</a>
+
+        <a class="item" ng-href="" ng-click="popover.hide();footerToggle();" >
+          {{ 'kToggleSummary' | translate}}</a>
+
+    </div>
+  </ion-content>
+</ion-popover-view>
