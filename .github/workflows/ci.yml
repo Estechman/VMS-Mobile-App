@@ -14,7 +14,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
       - run: npm ci
       - run: npm audit --audit-level=moderate
       - run: npm run lint || true
@@ -26,7 +25,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
       - run: npm ci
       - run: npm test || echo "No tests configured yet"
 
@@ -38,7 +36,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -69,7 +66,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
       - run: npm ci
       - run: npm run build
       - run: npx cap sync ios
