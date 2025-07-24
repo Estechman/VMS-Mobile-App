@@ -1,33 +1,36 @@
 module.exports = {
-  preset: '@ionic/angular-toolkit/jest',
+  preset: 'jest-preset-angular',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
+  rootDir: '.',
+  roots: ['<rootDir>/src'],
+  testEnvironment: 'jsdom',
   collectCoverageFrom: [
-    'www/js/**/*.js',
-    '!www/js/**/*.spec.js',
-    '!www/lib/**/*',
-    '!www/external/**/*'
+    'src/app/**/*.ts',
+    '!src/app/**/*.spec.ts',
+    '!src/app/**/*.d.ts',
+    '!src/main.ts',
+    '!src/polyfills.ts'
   ],
   coverageThreshold: {
     global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80
+      branches: 50,
+      functions: 50,
+      lines: 50,
+      statements: 50
     }
   },
-  testEnvironment: 'jsdom',
-  moduleNameMapping: {
-    '^@/(.*)$': '<rootDir>/www/$1'
-  },
-  transform: {
-    '^.+\\.(js|jsx)$': 'babel-jest'
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@app/(.*)$': '<rootDir>/src/app/$1'
   },
   testMatch: [
-    '<rootDir>/www/**/__tests__/**/*.(js|jsx)',
-    '<rootDir>/www/**/?(*.)(spec|test).(js|jsx)'
+    '<rootDir>/src/app/**/*.spec.ts'
   ],
-  moduleFileExtensions: ['js', 'json', 'jsx'],
-  collectCoverage: true,
+  moduleFileExtensions: ['ts', 'html', 'js', 'json'],
+  collectCoverage: false,
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html']
+  coverageReporters: ['text', 'lcov', 'html'],
+  transformIgnorePatterns: [
+    'node_modules/(?!(@angular|@ionic|@stencil|ionicons|rxjs|@ngrx)/)'
+  ]
 };

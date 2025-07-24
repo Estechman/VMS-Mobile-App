@@ -129,6 +129,16 @@ export class NvrService {
       return throwError('No login data configured');
     }
 
+    const cacheKey = 'monitors';
+    const cachedData = this.getCachedData(cacheKey);
+    if (cachedData) {
+      this.monitors.next(cachedData);
+      return new Observable(observer => {
+        observer.next(cachedData);
+        observer.complete();
+      });
+    }
+
     const apiUrl = `${loginData.apiurl}/monitors.json${this.authSession.value}`;
     
     return this.http.get<any>(apiUrl).pipe(
@@ -148,6 +158,7 @@ export class NvrService {
           parseInt(a.Monitor.Sequence) - parseInt(b.Monitor.Sequence)
         );
 
+        this.setCachedData(cacheKey, processedMonitors);
         this.monitors.next(processedMonitors);
         return processedMonitors;
       }),
@@ -289,6 +300,24 @@ export class NvrService {
     } catch (error) {
       console.error('Error loading saved login data:', error);
     }
+  }
+
+  private cache = new Map<string, any>();
+  private cacheTimeout = 5 * 60 * 1000;
+
+  private getCachedData(key: string): any {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      return cached.data;
+    }
+    return null;
+  }
+
+  private setCachedData(key: string, data: any): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
   }
 
   private handleError(error: any): Observable<never> {

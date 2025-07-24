@@ -1,0 +1,26 @@
+{
+  "monitors": [
+    {
+      "Monitor": {
+        "Id": "1",
+        "Name": "Front Door",
+        "Function": "Monitor",
+        "Enabled": "1",
+        "Width": "1920",
+        "Height": "1080",
+        "Sequence": "1"
+      }
+    },
+    {
+      "Monitor": {
+        "Id": "2", 
+        "Name": "Back Yard",
+        "Function": "Modect",
+        "Enabled": "1",
+        "Width": "1280",
+        "Height": "720",
+        "Sequence": "2"
+      }
+    }
+  ]
+}

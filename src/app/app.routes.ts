@@ -9,21 +9,24 @@ export const routes: Routes = [
   },
   {
     path: 'login',
-    loadComponent: () => import('./pages/login/login.page').then(m => m.LoginPage)
+    loadComponent: () => import('./pages/login/login.page').then(m => m.LoginPage),
+    title: 'zmNinja - Login'
   },
   {
     path: 'monitors',
     loadComponent: () => import('./pages/monitors/monitors.page').then(m => m.MonitorsPage),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard],
+    title: 'zmNinja - Monitors'
   },
   {
-    path: 'events/:id',
-    loadComponent: () => import('./pages/events/events.page').then(m => m.EventsPage),
+    path: 'events',
+    loadChildren: () => import('./pages/events/events.routes').then(m => m.routes),
     canActivate: [AuthGuard]
   },
   {
     path: 'state',
     loadComponent: () => import('./pages/state/state.page').then(m => m.StatePage),
-    canActivate: [AuthGuard]
-  },
+    canActivate: [AuthGuard],
+    title: 'zmNinja - System State'
+  }
 ];

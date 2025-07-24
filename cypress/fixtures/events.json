@@ -1,0 +1,30 @@
+{
+  "events": [
+    {
+      "Event": {
+        "Id": "1001",
+        "MonitorId": "1",
+        "Name": "Motion Detection",
+        "StartTime": "2025-07-24 05:00:00",
+        "EndTime": "2025-07-24 05:01:30",
+        "Length": "90",
+        "Frames": "45",
+        "AlarmFrames": "12",
+        "Archived": "0"
+      }
+    },
+    {
+      "Event": {
+        "Id": "1002",
+        "MonitorId": "2",
+        "Name": "Motion Detection",
+        "StartTime": "2025-07-24 04:30:00",
+        "EndTime": "2025-07-24 04:32:15",
+        "Length": "135",
+        "Frames": "67",
+        "AlarmFrames": "23",
+        "Archived": "1"
+      }
+    }
+  ]
+}

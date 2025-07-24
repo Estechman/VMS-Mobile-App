@@ -9,6 +9,17 @@ import { EffectsModule } from '@ngrx/effects';
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
 import { appReducer } from './app/store/app.reducer';
+import { environment } from './environments/environment';
+
+if (environment.production) {
+  import('@sentry/angular').then(Sentry => {
+    Sentry.init({
+      dsn: environment.sentryDsn,
+      environment: environment.production ? 'production' : 'development',
+      tracesSampleRate: 0.1,
+    });
+  });
+}
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -21,4 +32,11 @@ bootstrapApplication(AppComponent, {
       EffectsModule.forRoot([])
     ),
   ],
+}).catch(err => {
+  console.error('Error starting app:', err);
+  if (environment.production) {
+    import('@sentry/angular').then(Sentry => {
+      Sentry.captureException(err);
+    });
+  }
 });
