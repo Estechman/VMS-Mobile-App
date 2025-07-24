@@ -1,54 +1,175 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>zmNinja Login</ion-title>
+    <ion-title>zmNinja Settings</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="saveItems()" [disabled]="isLoading">
+        <ion-spinner *ngIf="isLoading" name="crescent"></ion-spinner>
+        <span *ngIf="!isLoading">Save</span>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content class="ion-padding">
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>ZoneMinder Server Login</ion-card-title>
-    </ion-card-header>
+  <form [formGroup]="loginForm" (ngSubmit)="saveItems()">
     
-    <ion-card-content>
-      <ion-item>
-        <ion-label position="stacked">Server Name/IP</ion-label>
-        <ion-input 
-          [(ngModel)]="loginData.serverName" 
-          placeholder="e.g., 192.168.1.100:8080/zm"
-          [disabled]="isLoading">
-        </ion-input>
-      </ion-item>
-      
-      <ion-item>
-        <ion-label position="stacked">Username</ion-label>
-        <ion-input 
-          [(ngModel)]="loginData.username" 
-          placeholder="ZoneMinder username"
-          [disabled]="isLoading">
-        </ion-input>
-      </ion-item>
-      
-      <ion-item>
-        <ion-label position="stacked">Password</ion-label>
-        <ion-input 
-          type="password"
-          [(ngModel)]="loginData.password" 
-          placeholder="ZoneMinder password"
-          [disabled]="isLoading">
-        </ion-input>
-      </ion-item>
-      
-      <ion-button 
-        expand="block" 
-        (click)="saveItems()" 
-        [disabled]="isLoading"
-        class="ion-margin-top">
-        <ion-spinner *ngIf="isLoading" name="crescent"></ion-spinner>
-        <span *ngIf="!isLoading">Login</span>
-      </ion-button>
-    </ion-card-content>
-  </ion-card>
+    <ion-card class="modern-card">
+      <ion-card-header>
+        <ion-card-title>Server Configuration</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item>
+          <ion-label position="stacked">Server Name/IP *</ion-label>
+          <ion-input 
+            formControlName="serverName"
+            placeholder="e.g., 192.168.1.100:8080/zm"
+            [disabled]="isLoading">
+          </ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Portal URL</ion-label>
+          <ion-input 
+            formControlName="url"
+            placeholder="http://server/zm"
+            [disabled]="isLoading">
+          </ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">API URL</ion-label>
+          <ion-input 
+            formControlName="apiurl"
+            placeholder="http://server/zm/api"
+            [disabled]="isLoading">
+          </ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Streaming URL</ion-label>
+          <ion-input 
+            formControlName="streamingurl"
+            placeholder="http://server/zm/cgi-bin"
+            [disabled]="isLoading">
+          </ion-input>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="modern-card">
+      <ion-card-header>
+        <ion-card-title>Authentication</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item>
+          <ion-checkbox formControlName="isUseAuth"></ion-checkbox>
+          <ion-label class="ion-margin-start">Use ZoneMinder Authentication</ion-label>
+        </ion-item>
+
+        <div *ngIf="loginForm.get('isUseAuth')?.value">
+          <ion-item>
+            <ion-label position="stacked">Username</ion-label>
+            <ion-input 
+              formControlName="username"
+              autocomplete="username"
+              [disabled]="isLoading">
+            </ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked">Password</ion-label>
+            <ion-input 
+              type="password"
+              formControlName="password"
+              autocomplete="current-password"
+              [disabled]="isLoading">
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <ion-item>
+          <ion-checkbox formControlName="isUseBasicAuth"></ion-checkbox>
+          <ion-label class="ion-margin-start">Use Basic Authentication</ion-label>
+        </ion-item>
+
+        <div *ngIf="loginForm.get('isUseBasicAuth')?.value">
+          <ion-item>
+            <ion-label position="stacked">Basic Auth Username</ion-label>
+            <ion-input 
+              formControlName="basicAuthUser"
+              [disabled]="isLoading">
+            </ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked">Basic Auth Password</ion-label>
+            <ion-input 
+              type="password"
+              formControlName="basicAuthPassword"
+              [disabled]="isLoading">
+            </ion-input>
+          </ion-item>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="modern-card">
+      <ion-card-header>
+        <ion-card-title>Advanced Settings</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item>
+          <ion-toggle formControlName="enableStrictSSL"></ion-toggle>
+          <ion-label class="ion-margin-start">Enable Strict SSL</ion-label>
+        </ion-item>
+
+        <ion-item>
+          <ion-toggle formControlName="isUseEventServer"></ion-toggle>
+          <ion-label class="ion-margin-start">Use Event Server</ion-label>
+        </ion-item>
+
+        <ion-item *ngIf="loginForm.get('isUseEventServer')?.value">
+          <ion-label position="stacked">Event Server URL</ion-label>
+          <ion-input 
+            formControlName="eventServer"
+            placeholder="wss://server:9000"
+            [disabled]="isLoading">
+          </ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-toggle formControlName="enableLowBandwidth"></ion-toggle>
+          <ion-label class="ion-margin-start">Low Bandwidth Mode</ion-label>
+        </ion-item>
+
+        <ion-item *ngIf="loginForm.get('enableLowBandwidth')?.value">
+          <ion-toggle formControlName="autoSwitchBandwidth"></ion-toggle>
+          <ion-label class="ion-margin-start">Auto Switch Bandwidth</ion-label>
+        </ion-item>
+
+        <ion-item>
+          <ion-toggle formControlName="saveToCloud"></ion-toggle>
+          <ion-label class="ion-margin-start">Save to Cloud</ion-label>
+        </ion-item>
+
+        <ion-item>
+          <ion-toggle formControlName="usePin"></ion-toggle>
+          <ion-label class="ion-margin-start">PIN Protection</ion-label>
+        </ion-item>
+
+        <ion-item>
+          <ion-toggle formControlName="isKiosk"></ion-toggle>
+          <ion-label class="ion-margin-start">Kiosk Mode</ion-label>
+        </ion-item>
+
+        <ion-item>
+          <ion-toggle formControlName="keepAwake"></ion-toggle>
+          <ion-label class="ion-margin-start">Keep Screen Awake</ion-label>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
+  </form>
 
   <ion-toast
     [isOpen]="showToast"

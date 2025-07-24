@@ -114,4 +114,22 @@ export class EventServerService {
   isEventServerConnected(): boolean {
     return this.isConnected;
   }
+
+  async init(): Promise<void> {
+    const loginData = this.nvrService.getLogin();
+    if (loginData && loginData.isUseEventServer && loginData.eventServer) {
+      this.connect(loginData.eventServer).subscribe();
+    }
+  }
+
+  getState(): string {
+    return this.isConnected ? 'Connected' : 'Disconnected';
+  }
+
+  restart(): void {
+    this.disconnect();
+    setTimeout(() => {
+      this.init();
+    }, 1000);
+  }
 }

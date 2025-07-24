@@ -13,16 +13,46 @@ import {
   IonCardHeader,
   IonCardTitle,
   IonSpinner,
-  IonToast
+  IonToast,
+  IonCheckbox,
+  IonToggle,
+  IonSelect,
+  IonSelectOption,
+  IonButtons
 } from '@ionic/angular/standalone';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 
 import { NvrService } from '../../services/nvr.service';
+import { EventServerService } from '../../services/event-server.service';
 import { AppState } from '../../store/app.state';
 import * as AppActions from '../../store/app.actions';
+
+interface LoginData {
+  serverName: string;
+  username: string;
+  password: string;
+  isUseAuth: boolean;
+  isUseBasicAuth: boolean;
+  basicAuthUser: string;
+  basicAuthPassword: string;
+  url: string;
+  apiurl: string;
+  streamingurl: string;
+  eventServer: string;
+  isUseEventServer: boolean;
+  enableStrictSSL: boolean;
+  saveToCloud: boolean;
+  enableLowBandwidth: boolean;
+  autoSwitchBandwidth: boolean;
+  fallbackConfiguration: string;
+  usePin: boolean;
+  isKiosk: boolean;
+  keepAwake: boolean;
+  authSession: string;
+}
 
 @Component({
   selector: 'app-login',
@@ -43,53 +73,95 @@ import * as AppActions from '../../store/app.actions';
     IonCardTitle,
     IonSpinner,
     IonToast,
+    IonCheckbox,
+    IonToggle,
+    IonSelect,
+    IonSelectOption,
+    IonButtons,
     FormsModule,
+    ReactiveFormsModule,
     CommonModule
   ]
 })
 export class LoginPage implements OnInit {
-  loginData = {
-    serverName: '',
-    username: '',
-    password: ''
-  };
-
+  loginForm: FormGroup;
   isLoading = false;
   showToast = false;
   toastMessage = '';
 
   constructor(
+    private fb: FormBuilder,
     private nvrService: NvrService,
+    private eventServerService: EventServerService,
     private router: Router,
     private store: Store<AppState>
-  ) {}
+  ) {
+    this.loginForm = this.createLoginForm();
+  }
 
   ngOnInit() {
     this.loadSavedData();
   }
 
+  private createLoginForm(): FormGroup {
+    return this.fb.group({
+      serverName: ['', Validators.required],
+      username: [''],
+      password: [''],
+      isUseAuth: [true],
+      isUseBasicAuth: [false],
+      basicAuthUser: [''],
+      basicAuthPassword: [''],
+      url: [''],
+      apiurl: [''],
+      streamingurl: [''],
+      eventServer: [''],
+      isUseEventServer: [false],
+      enableStrictSSL: [false],
+      saveToCloud: [false],
+      enableLowBandwidth: [false],
+      autoSwitchBandwidth: [false],
+      fallbackConfiguration: [''],
+      usePin: [false],
+      isKiosk: [false],
+      keepAwake: [true],
+      authSession: ['']
+    });
+  }
+
   async saveItems() {
-    if (!this.loginData.serverName || !this.loginData.username || !this.loginData.password) {
-      this.showError('Please fill in all fields');
+    if (!this.loginForm.valid) {
+      this.showError('Please fill in required fields');
       return;
     }
 
     this.isLoading = true;
+    const loginData = this.loginForm.value as LoginData;
 
     try {
+      this.sanitizeLoginData(loginData);
+      
+      await this.configureSecuritySettings(loginData);
+      
+      if (loginData.isUseEventServer) {
+        await this.eventServerService.init();
+      }
+
       const response = await this.nvrService.login(
-        this.loginData.serverName,
-        this.loginData.username,
-        this.loginData.password
+        loginData.serverName,
+        loginData.username,
+        loginData.password
       ).toPromise();
 
       this.store.dispatch(AppActions.setAuthentication({
         isAuthenticated: true,
         authSession: response.access_token || '',
-        username: this.loginData.username
+        username: loginData.username
       }));
 
-      this.saveToLocalStorage();
+      await this.saveLoginData(loginData);
+      
+      await this.nvrService.loadMonitors().toPromise();
       this.router.navigate(['/monitors']);
       
     } catch (error) {
@@ -100,31 +172,47 @@ export class LoginPage implements OnInit {
     }
   }
 
+  private sanitizeLoginData(loginData: LoginData) {
+    loginData.url = loginData.url.replace(/\s/g, "");
+    loginData.apiurl = loginData.apiurl.replace(/\s/g, "");
+    loginData.streamingurl = loginData.streamingurl.replace(/\s/g, "");
+    loginData.eventServer = loginData.eventServer.replace(/\s/g, "");
+    
+    if (loginData.isUseAuth) {
+      if (!loginData.username) loginData.username = "x";
+      if (!loginData.password) loginData.password = "x";
+    }
+  }
+
+  private async configureSecuritySettings(loginData: LoginData) {
+    if (loginData.isUseBasicAuth) {
+      await this.nvrService.configureBasicAuth(
+        loginData.basicAuthUser, 
+        loginData.basicAuthPassword
+      );
+    }
+
+    await this.nvrService.configureSSL(loginData.enableStrictSSL);
+  }
+
+  private async saveLoginData(loginData: LoginData) {
+    loginData.authSession = '';
+    this.nvrService.setLogin(loginData);
+    
+    if (loginData.saveToCloud && this.nvrService.isMobile()) {
+      await this.nvrService.saveToCloud(loginData);
+    }
+  }
+
   private loadSavedData() {
     try {
       const saved = localStorage.getItem('zmNinja-loginData');
       if (saved) {
         const data = JSON.parse(saved);
-        this.loginData = {
-          serverName: data.serverName || '',
-          username: data.username || '',
-          password: ''
-        };
+        this.loginForm.patchValue(data);
       }
     } catch (error) {
       console.error('Error loading saved data:', error);
-    }
-  }
-
-  private saveToLocalStorage() {
-    try {
-      const dataToSave = {
-        serverName: this.loginData.serverName,
-        username: this.loginData.username
-      };
-      localStorage.setItem('zmNinja-loginData', JSON.stringify(dataToSave));
-    } catch (error) {
-      console.error('Error saving data:', error);
     }
   }
 
