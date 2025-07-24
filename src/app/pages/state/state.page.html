@@ -1,0 +1,28 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>ZoneMinder State</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>System Status</ion-card-title>
+    </ion-card-header>
+    
+    <ion-card-content>
+      <div *ngIf="isLoading" class="loading-container">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Loading state...</p>
+      </div>
+      
+      <div *ngIf="!isLoading">
+        <p><strong>Current State:</strong> {{ zmState }}</p>
+        
+        <ion-button expand="block" (click)="toggleState()">
+          Toggle State
+        </ion-button>
+      </div>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

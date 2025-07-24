@@ -1,0 +1,28 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/monitors"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Events - Monitor {{ monitorId }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading events...</p>
+  </div>
+
+  <ion-list *ngIf="!isLoading">
+    <div *ngIf="events.length === 0" class="empty-state">
+      <p>No events found for this monitor</p>
+    </div>
+    
+    <ion-item *ngFor="let event of events">
+      <ion-label>
+        <h2>{{ event.name }}</h2>
+        <p>{{ event.timestamp }}</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>
+</ion-content>

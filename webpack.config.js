@@ -6,7 +6,9 @@ module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
   
   return {
-    entry: './www/js/app.js',
+    entry: {
+      legacy: './www/js/app.js'
+    },
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: isProduction ? '[name].[contenthash].js' : '[name].js',
@@ -26,7 +28,12 @@ module.exports = (env, argv) => {
         },
         {
           test: /\.ts$/,
-          use: 'ts-loader',
+          use: {
+            loader: 'ts-loader',
+            options: {
+              configFile: 'tsconfig.legacy.json'
+            }
+          },
           exclude: /node_modules/
         },
         {

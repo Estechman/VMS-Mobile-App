@@ -1,0 +1,54 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Monitors</ion-title>
+    <ion-button slot="end" fill="clear" (click)="loadMonitors()">
+      <ion-icon name="refresh"></ion-icon>
+    </ion-button>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading monitors...</p>
+  </div>
+
+  <ion-list *ngIf="!isLoading">
+    <ion-card *ngFor="let monitor of monitors" class="monitor-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon [name]="getMonitorIcon(monitor)"></ion-icon>
+          {{ monitor.Monitor.Name }}
+          <ion-badge [color]="getMonitorStatusColor(monitor)" class="status-badge">
+            {{ monitor.Monitor.Function }}
+          </ion-badge>
+        </ion-card-title>
+      </ion-card-header>
+      
+      <ion-card-content>
+        <p><strong>ID:</strong> {{ monitor.Monitor.Id }}</p>
+        <p><strong>Type:</strong> {{ monitor.Monitor.Type }}</p>
+        <p *ngIf="monitor.Monitor.Host"><strong>Host:</strong> {{ monitor.Monitor.Host }}:{{ monitor.Monitor.Port }}</p>
+        <p><strong>Status:</strong> {{ monitor.Monitor.Enabled === '1' ? 'Enabled' : 'Disabled' }}</p>
+        
+        <div class="button-container">
+          <ion-button fill="outline" (click)="openMonitor(monitor)">
+            Live View
+          </ion-button>
+          <ion-button fill="outline" (click)="viewEvents(monitor)">
+            Events
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </ion-list>
+
+  <div *ngIf="!isLoading && monitors.length === 0" class="empty-state">
+    <p>No monitors found</p>
+    <ion-button (click)="loadMonitors()">Retry</ion-button>
+  </div>
+</ion-content>
