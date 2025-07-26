@@ -101,6 +101,21 @@ export class LoginPage implements OnInit {
 
   ngOnInit() {
     this.loadSavedData();
+    this.addDemoServerPreset();
+  }
+
+  private addDemoServerPreset() {
+    if (!this.loginForm.get('serverName')?.value) {
+      this.loginForm.patchValue({
+        serverName: 'ZoneMinder Demo',
+        url: 'https://demo.zoneminder.com/zm',
+        apiurl: 'https://demo.zoneminder.com/zm/api',
+        streamingurl: 'https://demo.zoneminder.com/zm/cgi-bin',
+        username: 'demo',
+        password: 'demo',
+        isUseAuth: true
+      });
+    }
   }
 
   private createLoginForm(): FormGroup {
@@ -140,6 +155,8 @@ export class LoginPage implements OnInit {
 
     try {
       this.sanitizeLoginData(loginData);
+      
+      this.nvrService.setLogin(loginData);
       
       await this.configureSecuritySettings(loginData);
       
