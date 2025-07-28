@@ -1,28 +1,211 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>ZoneMinder State</ion-title>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>System Status</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="ion-padding">
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>System Status</ion-card-title>
-    </ion-card-header>
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <ion-item>
+    <div class="control-buttons">
+      <ion-button size="small" fill="outline" color="dark" (click)="selectCustomState()">
+        Change State
+      </ion-button>
+      <ion-button size="small" fill="outline" color="dark" (click)="controlZM('restart')">
+        Restart
+      </ion-button>
+      <ion-button size="small" fill="outline" color="dark" (click)="controlZM('stop')">
+        Stop
+      </ion-button>
+      <ion-button size="small" fill="outline" color="dark" (click)="controlZM('start')">
+        Start
+      </ion-button>
+    </div>
+  </ion-item>
+
+  <ion-list>
+    <ion-item>
+      <div class="status-row">
+        <div class="status-icon">
+          <ion-icon name="home"></ion-icon>
+        </div>
+        <div class="status-label">
+          ZoneMinder:
+        </div>
+        <div class="status-value" [style.color]="status.color">
+          {{ status.zmRun }}
+          <p *ngIf="status.customState">{{ status.customState }}</p>
+        </div>
+      </div>
+    </ion-item>
+
+    <ion-item>
+      <div class="status-row">
+        <div class="status-icon">
+          <ion-icon name="trending-up"></ion-icon>
+        </div>
+        <div class="status-label">
+          ZoneMinder Load:
+        </div>
+        <div class="status-value">
+          {{ status.zmLoad }}
+        </div>
+      </div>
+    </ion-item>
+
+    <ion-item>
+      <div class="status-row">
+        <div class="status-icon">
+          <ion-button size="small" (click)="restartEventServer()">
+            <ion-icon name="refresh"></ion-icon>
+          </ion-button>
+        </div>
+        <div class="status-label">
+          Event Server:
+        </div>
+        <div class="status-value">
+          {{ getEventServerState() }}
+        </div>
+      </div>
+    </ion-item>
+  </ion-list>
+
+  <div class="expandable-sections">
+    <div class="section-header" (click)="toggleStorage()">
+      <ion-icon [name]="showStorage ? 'remove' : 'add'"></ion-icon>
+      <ion-icon name="server"></ion-icon>
+      Storage
+    </div>
     
-    <ion-card-content>
-      <div *ngIf="isLoading" class="loading-container">
-        <ion-spinner name="crescent"></ion-spinner>
-        <p>Loading state...</p>
+    <div *ngIf="showStorage">
+      <div *ngFor="let store of status.storage" class="section-content">
+        <div class="section-item-header">
+          {{ store.Storage.Name }} ({{ store.Storage.Id }})
+        </div>
+        <div class="section-item-content">
+          <div class="info-row">
+            <strong>Path:</strong> {{ store.Storage.Path }}
+          </div>
+          <div class="info-row">
+            <strong>Disk Used:</strong> {{ humanFileSize(store.Storage.DiskSpace) }}
+          </div>
+          <div class="info-row">
+            <strong>Scheme:</strong> {{ store.Storage.Scheme }}
+          </div>
+          <div class="info-row" *ngIf="store.Storage.ServerId">
+            <strong>Server:</strong> {{ matchServer(store.Storage.ServerId) }}
+          </div>
+        </div>
       </div>
-      
-      <div *ngIf="!isLoading">
-        <p><strong>Current State:</strong> {{ zmState }}</p>
-        
-        <ion-button expand="block" (click)="toggleState()">
-          Toggle State
-        </ion-button>
+    </div>
+
+    <div class="section-header" (click)="toggleServer()">
+      <ion-icon [name]="showServer ? 'remove' : 'add'"></ion-icon>
+      <ion-icon name="desktop"></ion-icon>
+      Server
+    </div>
+    
+    <div *ngIf="showServer">
+      <div *ngFor="let server of status.servers" class="section-content">
+        <div class="section-item-header">
+          {{ server.Server.Name }} ({{ server.Server.Id }})
+        </div>
+        <div class="section-item-content">
+          <div class="info-row">
+            <strong>Host:</strong> {{ server.Server.Hostname }}
+          </div>
+          <div class="info-row">
+            <strong>Status:</strong> {{ server.Server.Status }}
+          </div>
+          <div class="info-row">
+            <strong>CPU Load:</strong> {{ server.Server.CpuLoad }}
+          </div>
+          <div class="info-row">
+            <strong>Total Memory:</strong> {{ humanFileSize(server.Server.TotalMem) }}
+          </div>
+          <div class="info-row">
+            <strong>Free Memory:</strong> {{ humanFileSize(server.Server.FreeMem) }}
+          </div>
+        </div>
       </div>
-    </ion-card-content>
-  </ion-card>
+    </div>
+  </div>
 </ion-content>
+
+<style>
+.control-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.status-icon {
+  width: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.status-label {
+  flex: 1;
+  margin-left: 16px;
+}
+
+.status-value {
+  text-align: right;
+  font-weight: bold;
+}
+
+.expandable-sections {
+  padding: 16px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: var(--ion-color-light);
+  margin: 8px 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.section-header ion-icon {
+  margin-right: 8px;
+}
+
+.section-content {
+  margin-left: 16px;
+  margin-bottom: 16px;
+}
+
+.section-item-header {
+  font-weight: bold;
+  padding: 8px;
+  background: var(--ion-color-light-shade);
+  border-radius: 4px;
+}
+
+.section-item-content {
+  padding: 8px;
+  font-size: 80%;
+  line-height: 140%;
+}
+
+.info-row {
+  margin: 4px 0;
+}
+</style>

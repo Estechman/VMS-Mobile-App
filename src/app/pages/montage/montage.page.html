@@ -1,0 +1,100 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Montage</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="loadMonitors(true)">
+        <ion-icon name="refresh"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading monitors...</p>
+  </div>
+
+  <ion-grid *ngIf="!isLoading">
+    <ion-row>
+      <ion-col size="12" size-md="6" size-lg="4" size-xl="3" *ngFor="let monitor of monitors">
+        <ion-card>
+          <div class="monitor-stream-container">
+            <img [src]="generateStreamUrl(monitor)" 
+                 [alt]="monitor.Monitor.Name"
+                 (error)="onImageError($event, monitor)"
+                 class="monitor-stream-image">
+            <div class="monitor-overlay">
+              <div class="monitor-status" [color]="getMonitorStatusColor(monitor)">
+                <ion-icon [name]="monitor.Monitor.isRunning === 'true' ? 'videocam' : 'videocam-off'"></ion-icon>
+              </div>
+            </div>
+          </div>
+          <ion-card-content>
+            <h3>{{ monitor.Monitor.Name }}</h3>
+            <p><strong>ID:</strong> {{ monitor.Monitor.Id }}</p>
+            <p><strong>Function:</strong> {{ monitor.Monitor.Function }}</p>
+            <p><strong>Status:</strong> {{ monitor.Monitor.isRunningText || (monitor.Monitor.Enabled === '1' ? 'Enabled' : 'Disabled') }}</p>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+
+  <div *ngIf="!isLoading && monitors.length === 0" class="empty-state">
+    <p>No active monitors found</p>
+    <ion-button (click)="loadMonitors(true)">Retry</ion-button>
+  </div>
+</ion-content>
+
+<style>
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+}
+
+.monitor-stream-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.monitor-stream-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.monitor-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.monitor-status {
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  padding: 8px;
+  color: white;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+  text-align: center;
+}
+</style>

@@ -1,0 +1,170 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Setup Wizard</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="skipWizard()">Skip</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="wizard-container">
+    <div class="progress-indicator">
+      <div class="step-indicator">
+        Step {{ currentStep }} of {{ totalSteps }}
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="(currentStep / totalSteps) * 100"></div>
+      </div>
+    </div>
+
+    <div *ngIf="currentStep === 1" class="step-content">
+      <ion-card>
+        <ion-card-content>
+          <h2>Welcome to zmNinja!</h2>
+          <p>This wizard will help you set up your ZoneMinder connection.</p>
+          <p>You'll need:</p>
+          <ul>
+            <li>Your ZoneMinder server URL</li>
+            <li>Valid login credentials</li>
+            <li>Network access to your server</li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <div *ngIf="currentStep === 2" class="step-content">
+      <ion-card>
+        <ion-card-content>
+          <h2>Server Configuration</h2>
+          <ion-list>
+            <ion-item>
+              <ion-label position="stacked">ZoneMinder Server URL</ion-label>
+              <ion-input 
+                [(ngModel)]="serverUrl" 
+                placeholder="https://your-server.com/zm"
+                type="url">
+              </ion-input>
+            </ion-item>
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <div *ngIf="currentStep === 3" class="step-content">
+      <ion-card>
+        <ion-card-content>
+          <h2>Login Credentials</h2>
+          <ion-list>
+            <ion-item>
+              <ion-label position="stacked">Username</ion-label>
+              <ion-input 
+                [(ngModel)]="username" 
+                placeholder="Enter username"
+                type="text">
+              </ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-label position="stacked">Password</ion-label>
+              <ion-input 
+                [(ngModel)]="password" 
+                placeholder="Enter password"
+                type="password">
+              </ion-input>
+            </ion-item>
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <div *ngIf="currentStep === 4" class="step-content">
+      <ion-card>
+        <ion-card-content>
+          <h2>Preferences</h2>
+          <ion-list>
+            <ion-item>
+              <ion-checkbox [(ngModel)]="enableNotifications"></ion-checkbox>
+              <ion-label class="ion-margin-start">
+                <h3>Enable Notifications</h3>
+                <p>Receive alerts for motion detection events</p>
+              </ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <div class="wizard-actions">
+      <ion-button 
+        *ngIf="currentStep > 1" 
+        fill="outline" 
+        (click)="previousStep()">
+        Previous
+      </ion-button>
+      
+      <ion-button 
+        *ngIf="currentStep < totalSteps" 
+        (click)="nextStep()"
+        [disabled]="currentStep === 2 && !serverUrl">
+        <span>Next</span>
+        <ion-icon name="arrow-forward" slot="end"></ion-icon>
+      </ion-button>
+      
+      <ion-button 
+        *ngIf="currentStep === totalSteps" 
+        color="success"
+        (click)="completeSetup()">
+        <ion-icon name="checkmark-circle" slot="start"></ion-icon>
+        Complete Setup
+      </ion-button>
+    </div>
+  </div>
+</ion-content>
+
+<style>
+.wizard-container {
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.progress-indicator {
+  margin-bottom: 30px;
+}
+
+.step-indicator {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.progress-bar {
+  height: 4px;
+  background: var(--ion-color-light);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--ion-color-primary);
+  transition: width 0.3s ease;
+}
+
+.step-content {
+  margin-bottom: 30px;
+}
+
+.wizard-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.wizard-actions ion-button {
+  flex: 1;
+}
+</style>

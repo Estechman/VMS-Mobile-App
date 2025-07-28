@@ -9,7 +9,8 @@ import {
   IonIcon,
   IonSpinner,
   IonCard,
-  IonCardContent
+  IonCardContent,
+  IonMenuButton
 } from '@ionic/angular/standalone';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -34,6 +35,7 @@ import { arrowBack, play, pause, videocamOff } from 'ionicons/icons';
     IonSpinner,
     IonCard,
     IonCardContent,
+    IonMenuButton,
     CommonModule
   ],
   styles: [`

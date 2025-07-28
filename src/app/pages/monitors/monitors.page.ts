@@ -16,7 +16,9 @@ import {
   IonSpinner,
   IonRefresher,
   IonRefresherContent,
-  IonBadge
+  IonBadge,
+  IonButtons,
+  IonMenuButton
 } from '@ionic/angular/standalone';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -48,6 +50,8 @@ import { videocam, videocamOff, refresh, settings, checkmarkCircle, closeCircle,
     IonRefresher,
     IonRefresherContent,
     IonBadge,
+    IonButtons,
+    IonMenuButton,
     CommonModule
   ]
 })

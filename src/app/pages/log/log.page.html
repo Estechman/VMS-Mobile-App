@@ -1,0 +1,106 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Logs</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="refreshLogs()">
+        <ion-icon name="refresh"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="log-controls">
+    <ion-item>
+      <ion-label>Log Level</ion-label>
+      <ion-select [(ngModel)]="logLevel" (ionChange)="filterLogs()">
+        <ion-select-option value="all">All</ion-select-option>
+        <ion-select-option value="error">Error</ion-select-option>
+        <ion-select-option value="warn">Warning</ion-select-option>
+        <ion-select-option value="info">Info</ion-select-option>
+        <ion-select-option value="debug">Debug</ion-select-option>
+      </ion-select>
+    </ion-item>
+    
+    <div class="action-buttons">
+      <ion-button size="small" fill="outline" (click)="exportLogs()">
+        <ion-icon name="download" slot="start"></ion-icon>
+        Export
+      </ion-button>
+      <ion-button size="small" fill="outline" color="danger" (click)="clearLogs()">
+        <ion-icon name="trash" slot="start"></ion-icon>
+        Clear
+      </ion-button>
+    </div>
+  </div>
+
+  <ion-card>
+    <ion-card-content>
+      <div class="log-container">
+        <div *ngFor="let log of logs" [class]="getLogClass(log)" class="log-entry">
+          {{ log }}
+        </div>
+        <div *ngIf="logs.length === 0" class="no-logs">
+          No logs available
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+</ion-content>
+
+<style>
+.log-controls {
+  padding: 16px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.log-container {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.log-entry {
+  margin-bottom: 4px;
+  padding: 2px 0;
+  word-wrap: break-word;
+}
+
+.log-error {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.log-warning {
+  color: #ffc107;
+  font-weight: bold;
+}
+
+.log-info {
+  color: #28a745;
+}
+
+.log-debug {
+  color: #6c757d;
+}
+
+.no-logs {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  padding: 20px;
+}
+</style>

@@ -1,0 +1,75 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+      <ion-button fill="clear" (click)="moveDays(-1)">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" (click)="moveDays(1)">
+        <ion-icon name="arrow-forward"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Timeline</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="doRefresh()">
+        <ion-icon name="refresh"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="timeline-info">
+    <p>{{ prettifyDate(fromDate) }} - {{ prettifyDate(toDate) }}</p>
+    <p><strong>Timeline Controls</strong></p>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Working on timeline...</p>
+  </div>
+
+  <div class="timeline-container" #timelineContainer *ngIf="!isLoading">
+    <ion-card>
+      <ion-card-content>
+        <h3>Timeline View</h3>
+        <p>Timeline visualization will be implemented here using vis.js or similar library.</p>
+        <p>This will show chronological events from ZoneMinder in an interactive timeline format.</p>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <div class="timeline-controls">
+    <ion-button (click)="gotoNow()" color="success">
+      <ion-icon name="time" slot="start"></ion-icon>
+      Now
+    </ion-button>
+  </div>
+</ion-content>
+
+<style>
+.timeline-info {
+  padding: 15px;
+  font-size: 10px;
+  color: grey;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+}
+
+.timeline-container {
+  padding: 15px;
+  min-height: 400px;
+}
+
+.timeline-controls {
+  padding: 15px;
+  display: flex;
+  justify-content: center;
+}
+</style>

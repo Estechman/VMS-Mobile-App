@@ -1,0 +1,57 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Help</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-card>
+    <ion-card-content>
+      <h2>zmNinja Help</h2>
+      <p>Welcome to zmNinja, the mobile companion app for ZoneMinder.</p>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-list>
+    <ion-item button (click)="openDocumentation()">
+      <ion-icon name="book" slot="start"></ion-icon>
+      <ion-label>
+        <h3>Documentation</h3>
+        <p>View the complete ZoneMinder documentation</p>
+      </ion-label>
+    </ion-item>
+
+    <ion-item button (click)="openForum()">
+      <ion-icon name="globe" slot="start"></ion-icon>
+      <ion-label>
+        <h3>Community Forum</h3>
+        <p>Get help from the ZoneMinder community</p>
+      </ion-label>
+    </ion-item>
+
+    <ion-item button (click)="sendFeedback()">
+      <ion-icon name="mail" slot="start"></ion-icon>
+      <ion-label>
+        <h3>Send Feedback</h3>
+        <p>Report issues or suggest improvements</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>
+
+  <ion-card>
+    <ion-card-content>
+      <h3>Quick Start Guide</h3>
+      <ul>
+        <li><strong>Monitors:</strong> View all your ZoneMinder cameras</li>
+        <li><strong>Live View:</strong> Watch real-time camera feeds</li>
+        <li><strong>Montage:</strong> See multiple cameras in a grid layout</li>
+        <li><strong>Timeline:</strong> Browse events chronologically</li>
+        <li><strong>Events:</strong> Review recorded events and alerts</li>
+        <li><strong>System Status:</strong> Monitor server health and performance</li>
+      </ul>
+    </ion-card-content>
+  </ion-card>
+</ion-content>
