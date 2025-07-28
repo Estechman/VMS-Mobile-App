@@ -123,6 +123,24 @@ export class NvrService {
     );
   }
 
+  validateApi(): Observable<any> {
+    const loginData = this.loginData.value;
+    if (!loginData) {
+      return throwError('No login data configured');
+    }
+
+    const apiUrl = `${loginData.apiurl}/host/getVersion.json${this.authSession.value}`;
+    
+    return this.http.get<any>(apiUrl).pipe(
+      tap((response: any) => {
+        if (response.version) {
+          this.setApiVersion(response.version);
+        }
+      }),
+      catchError(this.handleError)
+    );
+  }
+
   loadMonitors(): Observable<Monitor[]> {
     const loginData = this.loginData.value;
     if (!loginData) {

@@ -170,6 +170,8 @@ export class LoginPage implements OnInit {
         loginData.password
       ).toPromise();
 
+      await this.nvrService.validateApi().toPromise();
+
       this.store.dispatch(AppActions.setAuthentication({
         isAuthenticated: true,
         authSession: response.access_token || '',
