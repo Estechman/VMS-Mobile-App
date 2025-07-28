@@ -120,13 +120,35 @@ export class LiveViewPage implements OnInit, OnDestroy {
       console.log('🔧 [LIVE-VIEW] Loading monitor data...');
       
       this.subscription.add(
-        this.nvrService.getMonitors().subscribe(monitors => {
-          this.monitor = monitors.find(m => m.Monitor.Id === this.monitorId) || null;
-          console.log('✅ [LIVE-VIEW] Monitor loaded:', this.monitor?.Monitor?.Name);
+        this.nvrService.loadMonitors().subscribe({
+          next: (monitors) => {
+            console.log('✅ [LIVE-VIEW] Monitors loaded, count:', monitors.length);
+            this.monitor = monitors.find(m => m.Monitor.Id === this.monitorId) || null;
+            console.log('✅ [LIVE-VIEW] Monitor found:', this.monitor?.Monitor?.Name);
+            
+            if (this.monitor) {
+              this.generateAndSetStreamUrl();
+            } else {
+              console.error('❌ [LIVE-VIEW] Monitor not found in loaded monitors');
+              this.isLoading = false;
+            }
+          },
+          error: (error) => {
+            console.error('❌ [LIVE-VIEW] Error loading monitors:', error);
+            this.isLoading = false;
+          }
         })
       );
+      
+    } catch (error) {
+      console.error('❌ [LIVE-VIEW] Error in loadMonitorAndStream:', error);
+      this.isLoading = false;
+    }
+  }
 
-      console.log('🔧 [LIVE-VIEW] Generating stream URL...');
+  private async generateAndSetStreamUrl() {
+    try {
+      console.log('🔧 [LIVE-VIEW] Generating stream URL for monitor:', this.monitorId);
       this.streamUrl = await this.nvrService.generateStreamUrl(this.monitorId);
       console.log('✅ [LIVE-VIEW] Stream URL generated:', this.streamUrl ? 'Success' : 'Failed');
       
@@ -137,7 +159,7 @@ export class LiveViewPage implements OnInit, OnDestroy {
       this.isLoading = false;
       
     } catch (error) {
-      console.error('❌ [LIVE-VIEW] Error loading monitor/stream:', error);
+      console.error('❌ [LIVE-VIEW] Error generating stream URL:', error);
       this.isLoading = false;
     }
   }
@@ -152,9 +174,11 @@ export class LiveViewPage implements OnInit, OnDestroy {
 
   private async refreshStreamUrl() {
     try {
-      const newUrl = await this.nvrService.generateStreamUrl(this.monitorId);
-      if (newUrl) {
-        this.streamUrl = newUrl;
+      if (this.monitor) {
+        const newUrl = await this.nvrService.generateStreamUrl(this.monitorId);
+        if (newUrl) {
+          this.streamUrl = newUrl;
+        }
       }
     } catch (error) {
       console.error('❌ [LIVE-VIEW] Error refreshing stream:', error);
@@ -199,6 +223,7 @@ export class LiveViewPage implements OnInit, OnDestroy {
   async retryStream() {
     console.log('🔄 [LIVE-VIEW] Retrying stream...');
     this.isLoading = true;
+    this.streamUrl = '';
     await this.loadMonitorAndStream();
   }
 
