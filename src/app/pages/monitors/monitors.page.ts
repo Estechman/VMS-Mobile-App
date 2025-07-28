@@ -72,10 +72,10 @@ export class MonitorsPage implements OnInit, OnDestroy {
     this.subscription.unsubscribe();
   }
 
-  loadMonitors() {
+  loadMonitors(forceReload: boolean = false) {
     this.isLoading = true;
     this.subscription.add(
-      this.nvrService.loadMonitors().subscribe({
+      this.nvrService.loadMonitors(forceReload).subscribe({
         next: (monitors) => {
           this.monitors = monitors;
           this.isLoading = false;
@@ -97,7 +97,7 @@ export class MonitorsPage implements OnInit, OnDestroy {
   }
 
   doRefresh(event: any) {
-    this.nvrService.loadMonitors().subscribe({
+    this.nvrService.loadMonitors(true).subscribe({
       next: () => {
         event.target.complete();
       },
@@ -109,6 +109,7 @@ export class MonitorsPage implements OnInit, OnDestroy {
 
   openMonitor(monitor: Monitor) {
     this.nvrService.debug(`Opening monitor: ${monitor.Monitor.Name}`);
+    this.router.navigate(['/live-view', monitor.Monitor.Id]);
   }
 
   viewEvents(monitor: Monitor) {

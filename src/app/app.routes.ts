@@ -24,6 +24,12 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
+    path: 'live-view/:id',
+    loadComponent: () => import('./pages/live-view/live-view.page').then(m => m.LiveViewPage),
+    canActivate: [AuthGuard],
+    title: 'zmNinja - Live View'
+  },
+  {
     path: 'state',
     loadComponent: () => import('./pages/state/state.page').then(m => m.StatePage),
     canActivate: [AuthGuard],

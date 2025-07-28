@@ -1,0 +1,49 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button (click)="goBack()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>{{ monitor?.Monitor?.Name || 'Live View' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="toggleStream()" [disabled]="isLoading">
+        <ion-icon [name]="isStreamPaused ? 'play' : 'pause'"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading live stream...</p>
+  </div>
+
+  <div *ngIf="!isLoading && streamUrl" class="stream-container">
+    <img 
+      [src]="streamUrl" 
+      [alt]="monitor?.Monitor?.Name + ' live stream'"
+      (load)="onStreamLoad()"
+      (error)="onStreamError($event)"
+      class="live-stream-image"
+    />
+  </div>
+
+  <div *ngIf="!isLoading && !streamUrl" class="error-container">
+    <ion-icon name="videocam-off" size="large"></ion-icon>
+    <p>Unable to load live stream</p>
+    <ion-button (click)="retryStream()">Retry</ion-button>
+  </div>
+
+  <div class="stream-info" *ngIf="monitor">
+    <ion-card>
+      <ion-card-content>
+        <p><strong>Monitor:</strong> {{ monitor.Monitor.Name }}</p>
+        <p><strong>Status:</strong> {{ monitor.Monitor.Function }}</p>
+        <p><strong>Resolution:</strong> {{ monitor.Monitor.Width }}x{{ monitor.Monitor.Height }}</p>
+        <p *ngIf="monitor.Monitor.Host"><strong>Source:</strong> {{ monitor.Monitor.Host }}:{{ monitor.Monitor.Port }}</p>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

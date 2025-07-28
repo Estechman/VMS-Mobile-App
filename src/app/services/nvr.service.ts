@@ -209,8 +209,8 @@ export class NvrService {
     );
   }
 
-  loadMonitors(): Observable<Monitor[]> {
-    console.log('🔵 [NVR] loadMonitors() called');
+  loadMonitors(forceReload: boolean = false): Observable<Monitor[]> {
+    console.log('🔵 [NVR] loadMonitors() called with forceReload:', forceReload);
     
     const loginData = this.loginData.value;
     if (!loginData) {
@@ -224,14 +224,19 @@ export class NvrService {
     });
 
     const cacheKey = 'monitors';
-    const cachedData = this.getCachedData(cacheKey);
-    if (cachedData) {
-      console.log('✅ [NVR] Using cached monitors data:', cachedData);
-      this.monitors.next(cachedData);
-      return new Observable(observer => {
-        observer.next(cachedData);
-        observer.complete();
-      });
+    if (!forceReload) {
+      const cachedData = this.getCachedData(cacheKey);
+      if (cachedData) {
+        console.log('✅ [NVR] Using cached monitors data:', cachedData);
+        this.monitors.next(cachedData);
+        return new Observable(observer => {
+          observer.next(cachedData);
+          observer.complete();
+        });
+      }
+    } else {
+      console.log('🔄 [NVR] Force reload - clearing cache');
+      this.cache.delete(cacheKey);
     }
 
     const authSession = this.authSession.value;
@@ -451,6 +456,87 @@ export class NvrService {
       }
     }
     return str.join('&');
+  }
+
+  generateStreamUrl(monitorId: string, scale: string = '100', mode: string = 'jpeg'): Promise<string> {
+    const loginData = this.loginData.value;
+    if (!loginData) {
+      throw new Error('No login data configured');
+    }
+
+    const monitor = this.monitors.value.find(m => m.Monitor.Id === monitorId);
+    if (!monitor) {
+      throw new Error(`Monitor ${monitorId} not found`);
+    }
+
+    const authSession = this.authSession.value;
+    const connKey = monitor.Monitor.connKey || this.generateConnKey();
+    
+    let streamUrl = `${loginData.streamingurl}/nph-zms?mode=${mode}&monitor=${monitorId}&scale=${scale}`;
+    
+    if (connKey && mode !== 'single') {
+      streamUrl += `&connkey=${connKey}`;
+    }
+    
+    streamUrl += authSession;
+    streamUrl += `&rand=${Math.floor(Math.random() * 100000)}`;
+    
+    console.log('🔧 [NVR] Generated stream URL:', streamUrl);
+    return Promise.resolve(streamUrl);
+  }
+
+  pauseLiveStream(monitorId: string): Observable<any> {
+    const loginData = this.loginData.value;
+    if (!loginData) {
+      return throwError('No login data configured');
+    }
+
+    const monitor = this.monitors.value.find(m => m.Monitor.Id === monitorId);
+    if (!monitor || !monitor.Monitor.connKey) {
+      return throwError('Monitor or connection key not found');
+    }
+
+    const authToken = this.authSession.value.replace('&auth=', '');
+    const url = `${loginData.url}/index.php?view=request&request=stream&connkey=${monitor.Monitor.connKey}&auth=${authToken}&command=1`;
+    
+    console.log('🔧 [NVR] Pausing live stream for monitor:', monitorId);
+    return this.http.get(url);
+  }
+
+  resumeLiveStream(monitorId: string): Observable<any> {
+    const loginData = this.loginData.value;
+    if (!loginData) {
+      return throwError('No login data configured');
+    }
+
+    const monitor = this.monitors.value.find(m => m.Monitor.Id === monitorId);
+    if (!monitor || !monitor.Monitor.connKey) {
+      return throwError('Monitor or connection key not found');
+    }
+
+    const authToken = this.authSession.value.replace('&auth=', '');
+    const url = `${loginData.url}/index.php?view=request&request=stream&connkey=${monitor.Monitor.connKey}&auth=${authToken}&command=2`;
+    
+    console.log('🔧 [NVR] Resuming live stream for monitor:', monitorId);
+    return this.http.get(url);
+  }
+
+  killLiveStream(monitorId: string): Observable<any> {
+    const loginData = this.loginData.value;
+    if (!loginData) {
+      return throwError('No login data configured');
+    }
+
+    const monitor = this.monitors.value.find(m => m.Monitor.Id === monitorId);
+    if (!monitor || !monitor.Monitor.connKey) {
+      return throwError('Monitor or connection key not found');
+    }
+
+    const authToken = this.authSession.value.replace('&auth=', '');
+    const url = `${loginData.url}/index.php?view=request&request=stream&connkey=${monitor.Monitor.connKey}&auth=${authToken}&command=17`;
+    
+    console.log('🔧 [NVR] Killing live stream for monitor:', monitorId);
+    return this.http.get(url);
   }
 
   debug(message: string): void {
