@@ -108,12 +108,12 @@ export class LoginPage implements OnInit {
     if (!this.loginForm.get('serverName')?.value) {
       this.loginForm.patchValue({
         serverName: 'ZoneMinder Demo',
-        url: 'https://demo.zoneminder.com/zm',
-        apiurl: 'https://demo.zoneminder.com/zm/api',
-        streamingurl: 'https://demo.zoneminder.com/zm/cgi-bin',
-        username: 'demo',
-        password: 'demo',
-        isUseAuth: true
+        url: 'https://demo.zoneminder.com/',
+        apiurl: 'https://demo.zoneminder.com/api',
+        streamingurl: 'https://demo.zoneminder.com/cgi-bin/',
+        username: '',
+        password: '',
+        isUseAuth: false
       });
     }
   }
