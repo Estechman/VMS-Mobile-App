@@ -250,6 +250,7 @@ export class NvrService {
         console.log('✅ [NVR] Monitors API response:', response);
         const monitors = response.monitors || [];
         console.log('📊 [NVR] Found', monitors.length, 'monitors');
+        console.log('🔍 [NVR] Sample monitor structure:', monitors[0]);
         
         const processedMonitors = monitors.map((monitor: Monitor) => {
           monitor.Monitor.connKey = this.generateConnKey();

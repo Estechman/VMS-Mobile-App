@@ -123,13 +123,25 @@ export class LiveViewPage implements OnInit, OnDestroy {
         this.nvrService.loadMonitors().subscribe({
           next: (monitors) => {
             console.log('✅ [LIVE-VIEW] Monitors loaded, count:', monitors.length);
-            this.monitor = monitors.find(m => m.Monitor.Id === this.monitorId) || null;
+            
+            const availableIds = monitors.map(m => m.Monitor.Id);
+            console.log('🔍 [LIVE-VIEW] Available monitor IDs:', availableIds);
+            console.log('🔍 [LIVE-VIEW] Monitor ID types:', availableIds.map(id => typeof id));
+            console.log('🔍 [LIVE-VIEW] Looking for monitor ID:', this.monitorId, 'Type:', typeof this.monitorId);
+            
+            this.monitor = monitors.find(m => 
+              m.Monitor.Id === this.monitorId || 
+              m.Monitor.Id === parseInt(this.monitorId).toString() ||
+              parseInt(m.Monitor.Id) === parseInt(this.monitorId)
+            ) || null;
+            
             console.log('✅ [LIVE-VIEW] Monitor found:', this.monitor?.Monitor?.Name);
             
             if (this.monitor) {
               this.generateAndSetStreamUrl();
             } else {
               console.error('❌ [LIVE-VIEW] Monitor not found in loaded monitors');
+              console.error('❌ [LIVE-VIEW] Searched for ID:', this.monitorId, 'in IDs:', availableIds);
               this.isLoading = false;
             }
           },
