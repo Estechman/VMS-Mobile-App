@@ -123,7 +123,7 @@ export class LoginPage implements OnInit {
       serverName: ['', Validators.required],
       username: [''],
       password: [''],
-      isUseAuth: [true],
+      isUseAuth: [false],
       isUseBasicAuth: [false],
       basicAuthUser: [''],
       basicAuthPassword: [''],
@@ -200,6 +200,9 @@ export class LoginPage implements OnInit {
     if (loginData.isUseAuth) {
       if (!loginData.username) loginData.username = "x";
       if (!loginData.password) loginData.password = "x";
+    } else {
+      loginData.username = "";
+      loginData.password = "";
     }
   }
 

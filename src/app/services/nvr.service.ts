@@ -107,6 +107,15 @@ export class NvrService {
       return throwError('No login data configured');
     }
 
+    if (!loginData.isUseAuth) {
+      this.log("Auth is disabled, setting authSession to empty");
+      this.authSession.next('');
+      return new Observable(observer => {
+        observer.next({ success: true, message: 'no auth' });
+        observer.complete();
+      });
+    }
+
     const apiUrl = `${loginData.apiurl}/host/login.json`;
     const credentials = {
       user: username,
@@ -127,6 +136,14 @@ export class NvrService {
     const loginData = this.loginData.value;
     if (!loginData) {
       return throwError('No login data configured');
+    }
+
+    if (!loginData.isUseAuth) {
+      this.log("Auth is disabled, skipping API validation");
+      return new Observable(observer => {
+        observer.next({ version: '1.0.0', success: true });
+        observer.complete();
+      });
     }
 
     const apiUrl = `${loginData.apiurl}/host/getVersion.json${this.authSession.value}`;
