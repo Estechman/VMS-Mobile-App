@@ -465,7 +465,10 @@ export class NvrService {
       throw new Error('No login data configured');
     }
 
-    const monitor = this.monitors.value.find(m => m.Monitor.Id === monitorId);
+    const monitor = this.monitors.value.find(m => 
+      String(m.Monitor.Id) === String(monitorId) || 
+      Number(m.Monitor.Id) === Number(monitorId)
+    );
     if (!monitor) {
       throw new Error(`Monitor ${monitorId} not found`);
     }
@@ -492,7 +495,10 @@ export class NvrService {
       return throwError('No login data configured');
     }
 
-    const monitor = this.monitors.value.find(m => m.Monitor.Id === monitorId);
+    const monitor = this.monitors.value.find(m => 
+      String(m.Monitor.Id) === String(monitorId) || 
+      Number(m.Monitor.Id) === Number(monitorId)
+    );
     if (!monitor || !monitor.Monitor.connKey) {
       return throwError('Monitor or connection key not found');
     }
@@ -510,7 +516,10 @@ export class NvrService {
       return throwError('No login data configured');
     }
 
-    const monitor = this.monitors.value.find(m => m.Monitor.Id === monitorId);
+    const monitor = this.monitors.value.find(m => 
+      String(m.Monitor.Id) === String(monitorId) || 
+      Number(m.Monitor.Id) === Number(monitorId)
+    );
     if (!monitor || !monitor.Monitor.connKey) {
       return throwError('Monitor or connection key not found');
     }
@@ -528,7 +537,10 @@ export class NvrService {
       return throwError('No login data configured');
     }
 
-    const monitor = this.monitors.value.find(m => m.Monitor.Id === monitorId);
+    const monitor = this.monitors.value.find(m => 
+      String(m.Monitor.Id) === String(monitorId) || 
+      Number(m.Monitor.Id) === Number(monitorId)
+    );
     if (!monitor || !monitor.Monitor.connKey) {
       return throwError('Monitor or connection key not found');
     }
