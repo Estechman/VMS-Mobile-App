@@ -1,0 +1,15 @@
+{
+  "name": "zmninja-electron",
+  "version": "1.7.8",
+  "description": "zmNinja Desktop App for macOS",
+  "main": "electron.js",
+  "scripts": {
+    "start": "electron .",
+    "install-deps": "npm install --production"
+  },
+  "dependencies": {
+    "electron": "^33.4.11"
+  },
+  "author": "ZoneMinder Community",
+  "license": "GPL-2.0"
+}
