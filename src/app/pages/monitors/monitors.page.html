@@ -33,7 +33,7 @@
         <p><strong>ID:</strong> {{ monitor.Monitor.Id }}</p>
         <p><strong>Type:</strong> {{ monitor.Monitor.Type }}</p>
         <p *ngIf="monitor.Monitor.Host"><strong>Host:</strong> {{ monitor.Monitor.Host }}:{{ monitor.Monitor.Port }}</p>
-        <p><strong>Status:</strong> {{ monitor.Monitor.Enabled === '1' ? 'Enabled' : 'Disabled' }}</p>
+        <p><strong>Status:</strong> {{ getMonitorStatusText(monitor) }}</p>
         
         <div class="button-container">
           <ion-button fill="outline" (click)="openMonitor(monitor)">

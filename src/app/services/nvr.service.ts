@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, BehaviorSubject, throwError } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { Observable, BehaviorSubject, throwError, of, forkJoin } from 'rxjs';
+import { catchError, map, tap, switchMap } from 'rxjs/operators';
 
 export interface LoginData {
   serverName: string;
@@ -41,6 +41,18 @@ export interface Monitor {
     controlURL?: string;
     connKey?: string;
     isAlarmed?: boolean;
+    isRunning?: string;
+    isRunningText?: string;
+    color?: string;
+    char?: string;
+  };
+  Monitor_Status?: {
+    MonitorId: string | null;
+    Status: string | null;
+    CaptureFPS: string | null;
+    AnalysisFPS: string | null;
+    CaptureBandwidth: string | null;
+    UpdatedOn: string | null;
   };
 }
 
@@ -267,8 +279,15 @@ export class NvrService {
 
         console.log('✅ [NVR] Processed monitors:', processedMonitors);
         this.setCachedData(cacheKey, processedMonitors);
-        this.monitors.next(processedMonitors);
+        
         return processedMonitors;
+      }),
+      switchMap(processedMonitors => {
+        return this.updateMonitorStatus(processedMonitors).pipe(
+          tap(monitorsWithStatus => {
+            this.monitors.next(monitorsWithStatus);
+          })
+        );
       }),
       catchError((error) => {
         console.error('❌ [NVR] Load monitors failed:', error);
@@ -550,6 +569,109 @@ export class NvrService {
     
     console.log('🔧 [NVR] Killing live stream for monitor:', monitorId);
     return this.http.get(url);
+  }
+
+  checkMonitorStatus(monitorId: string): Observable<any> {
+    const loginData = this.loginData.value;
+    if (!loginData) {
+      return throwError('No login data configured');
+    }
+
+    const authSession = this.authSession.value;
+    const apiUrl = `${loginData.apiurl}/monitors/daemonStatus/id:${monitorId}/daemon:zmc.json${authSession}`;
+    
+    console.log('🔧 [NVR] Checking daemon status for monitor:', monitorId);
+    return this.http.get<any>(apiUrl).pipe(
+      map(response => {
+        console.log('✅ [NVR] Daemon status response:', response);
+        return response;
+      }),
+      catchError((error) => {
+        console.error('❌ [NVR] Daemon status check failed:', error);
+        return this.handleError(error);
+      })
+    );
+  }
+
+  updateMonitorStatus(monitors: Monitor[]): Observable<Monitor[]> {
+    if (!monitors.length) {
+      return of(monitors);
+    }
+
+    const hasValidMonitorStatus = monitors[0].Monitor_Status && 
+      monitors.some(m => m.Monitor_Status?.Status !== null);
+
+    if (hasValidMonitorStatus) {
+      console.log('🔧 [NVR] Using Monitor_Status for status display');
+      return of(this.processMonitorStatus(monitors));
+    } else {
+      console.log('🔧 [NVR] No valid Monitor_Status, using daemon status checks');
+      return this.checkAllMonitorDaemonStatus(monitors);
+    }
+  }
+
+  private processMonitorStatus(monitors: Monitor[]): Monitor[] {
+    return monitors.map(monitor => {
+      if (monitor.Monitor_Status?.Status === 'Connected') {
+        monitor.Monitor.isRunning = 'true';
+        monitor.Monitor.color = '#4CAF50';
+        monitor.Monitor.char = 'checkmark-circle';
+        monitor.Monitor.isRunningText = monitor.Monitor_Status.Status;
+      } else {
+        monitor.Monitor.isRunning = 'false';
+        monitor.Monitor.color = '#F44336';
+        monitor.Monitor.char = 'close-circle';
+        monitor.Monitor.isRunningText = monitor.Monitor_Status?.Status || 'Unknown';
+      }
+      return monitor;
+    });
+  }
+
+  private checkAllMonitorDaemonStatus(monitors: Monitor[]): Observable<Monitor[]> {
+    const statusChecks = monitors.map(monitor => {
+      monitor.Monitor.isRunning = '...';
+      monitor.Monitor.color = '#03A9F4';
+      monitor.Monitor.char = 'help-circle';
+      monitor.Monitor.isRunningText = '...';
+
+      return this.checkMonitorStatus(monitor.Monitor.Id).pipe(
+        map(statusData => {
+          if (statusData.statustext.indexOf('not running') > -1) {
+            monitor.Monitor.isRunning = 'false';
+            monitor.Monitor.color = '#F44336';
+            monitor.Monitor.char = 'close-circle';
+          } else if (statusData.statustext.indexOf('pending') > -1) {
+            monitor.Monitor.isRunning = 'pending';
+            monitor.Monitor.color = '#FF9800';
+            monitor.Monitor.char = 'help-circle';
+          } else if (statusData.statustext.indexOf('running since') > -1) {
+            monitor.Monitor.isRunning = 'true';
+            monitor.Monitor.color = '#4CAF50';
+            monitor.Monitor.char = 'checkmark-circle';
+          } else if (statusData.statustext.indexOf('Unable to connect') > -1) {
+            monitor.Monitor.isRunning = 'false';
+            monitor.Monitor.color = '#F44336';
+            monitor.Monitor.char = 'close-circle';
+          } else {
+            monitor.Monitor.isRunning = 'error';
+            monitor.Monitor.color = '#795548';
+            monitor.Monitor.char = 'help-circle';
+          }
+          monitor.Monitor.isRunningText = statusData.statustext;
+          return monitor;
+        }),
+        catchError(error => {
+          console.error('❌ [NVR] Error checking monitor status:', error);
+          monitor.Monitor.isRunning = 'error';
+          monitor.Monitor.color = '#795548';
+          monitor.Monitor.char = 'help-circle';
+          monitor.Monitor.isRunningText = 'Error checking status';
+          return of(monitor);
+        })
+      );
+    });
+
+    return forkJoin(statusChecks);
   }
 
   debug(message: string): void {

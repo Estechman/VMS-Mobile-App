@@ -24,7 +24,7 @@ import { Subscription } from 'rxjs';
 
 import { NvrService, Monitor } from '../../services/nvr.service';
 import { addIcons } from 'ionicons';
-import { videocam, videocamOff, refresh, settings } from 'ionicons/icons';
+import { videocam, videocamOff, refresh, settings, checkmarkCircle, closeCircle, time, warning, helpCircle } from 'ionicons/icons';
 
 @Component({
   selector: 'app-monitors',
@@ -60,7 +60,7 @@ export class MonitorsPage implements OnInit, OnDestroy {
     private nvrService: NvrService,
     private router: Router
   ) {
-    addIcons({ videocam, videocamOff, refresh, settings });
+    addIcons({ videocam, videocamOff, refresh, settings, checkmarkCircle, closeCircle, time, warning, helpCircle });
   }
 
   ngOnInit() {
@@ -117,6 +117,21 @@ export class MonitorsPage implements OnInit, OnDestroy {
   }
 
   getMonitorStatusColor(monitor: Monitor): string {
+    if (monitor.Monitor.isRunning) {
+      switch (monitor.Monitor.isRunning) {
+        case 'true':
+          return 'success';
+        case 'false':
+          return 'danger';
+        case 'pending':
+          return 'warning';
+        case 'error':
+          return 'medium';
+        default:
+          return 'primary';
+      }
+    }
+
     if (monitor.Monitor.Enabled === '0') {
       return 'medium';
     }
@@ -135,6 +150,28 @@ export class MonitorsPage implements OnInit, OnDestroy {
   }
 
   getMonitorIcon(monitor: Monitor): string {
+    if (monitor.Monitor.isRunning) {
+      switch (monitor.Monitor.isRunning) {
+        case 'true':
+          return 'checkmark-circle';
+        case 'false':
+          return 'close-circle';
+        case 'pending':
+          return 'time';
+        case 'error':
+          return 'warning';
+        default:
+          return 'help-circle';
+      }
+    }
+
     return monitor.Monitor.Enabled === '1' ? 'videocam' : 'videocam-off';
+  }
+
+  getMonitorStatusText(monitor: Monitor): string {
+    if (monitor.Monitor.isRunningText) {
+      return monitor.Monitor.isRunningText;
+    }
+    return monitor.Monitor.Enabled === '1' ? 'Enabled' : 'Disabled';
   }
 }
