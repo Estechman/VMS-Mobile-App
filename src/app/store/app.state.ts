@@ -25,6 +25,10 @@ export interface AppState {
   ui: UIState;
 }
 
+export interface RootState {
+  app: AppState;
+}
+
 export const initialAuthState: AuthState = {
   isAuthenticated: false,
   authSession: '',

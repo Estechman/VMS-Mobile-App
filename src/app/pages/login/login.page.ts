@@ -27,7 +27,7 @@ import { Store } from '@ngrx/store';
 
 import { NvrService } from '../../services/nvr.service';
 import { EventServerService } from '../../services/event-server.service';
-import { AppState } from '../../store/app.state';
+import { RootState } from '../../store/app.state';
 import * as AppActions from '../../store/app.actions';
 
 interface LoginData {
@@ -94,7 +94,7 @@ export class LoginPage implements OnInit {
     private nvrService: NvrService,
     private eventServerService: EventServerService,
     private router: Router,
-    private store: Store<AppState>
+    private store: Store<RootState>
   ) {
     this.loginForm = this.createLoginForm();
   }
