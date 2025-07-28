@@ -102,71 +102,131 @@ export class NvrService {
   }
 
   login(serverName: string, username: string, password: string): Observable<any> {
+    console.log('🔵 [NVR] login() called with:', {
+      serverName,
+      username,
+      password: password ? '[REDACTED]' : '[EMPTY]'
+    });
+    
     const loginData = this.loginData.value;
     if (!loginData) {
+      console.error('❌ [NVR] No login data configured');
       return throwError('No login data configured');
     }
 
+    console.log('📋 [NVR] Current login data:', {
+      isUseAuth: loginData.isUseAuth,
+      apiurl: loginData.apiurl,
+      serverName: loginData.serverName
+    });
+
     if (!loginData.isUseAuth) {
+      console.log('✅ [NVR] Auth is disabled, using no-auth flow');
       this.log("Auth is disabled, setting authSession to empty");
       this.authSession.next('');
+      console.log('✅ [NVR] AuthSession set to empty, returning success');
       return new Observable(observer => {
-        observer.next({ success: true, message: 'no auth' });
+        const response = { success: true, message: 'no auth' };
+        console.log('✅ [NVR] Returning no-auth response:', response);
+        observer.next(response);
         observer.complete();
       });
     }
 
+    console.log('🔧 [NVR] Auth is enabled, performing API login');
     const apiUrl = `${loginData.apiurl}/host/login.json`;
     const credentials = {
       user: username,
       pass: password
     };
 
+    console.log('🔧 [NVR] Making API call to:', apiUrl);
+    console.log('🔧 [NVR] With credentials:', { user: username, pass: password ? '[REDACTED]' : '[EMPTY]' });
+
     return this.http.post(apiUrl, credentials).pipe(
       tap((response: any) => {
+        console.log('✅ [NVR] API login response:', response);
         if (response.access_token) {
-          this.authSession.next(`&token=${response.access_token}`);
+          const authSession = `&token=${response.access_token}`;
+          this.authSession.next(authSession);
+          console.log('✅ [NVR] AuthSession set to:', authSession);
+        } else {
+          console.log('⚠️ [NVR] No access_token in response');
         }
       }),
-      catchError(this.handleError)
+      catchError((error) => {
+        console.error('❌ [NVR] API login failed:', error);
+        return this.handleError(error);
+      })
     );
   }
 
   validateApi(): Observable<any> {
+    console.log('🔵 [NVR] validateApi() called');
+    
     const loginData = this.loginData.value;
     if (!loginData) {
+      console.error('❌ [NVR] No login data configured for API validation');
       return throwError('No login data configured');
     }
 
+    console.log('📋 [NVR] Validating API with login data:', {
+      isUseAuth: loginData.isUseAuth,
+      apiurl: loginData.apiurl
+    });
+
     if (!loginData.isUseAuth) {
+      console.log('✅ [NVR] Auth is disabled, skipping API validation');
       this.log("Auth is disabled, skipping API validation");
       return new Observable(observer => {
-        observer.next({ version: '1.0.0', success: true });
+        const response = { version: '1.0.0', success: true };
+        console.log('✅ [NVR] Returning mock API validation response:', response);
+        observer.next(response);
         observer.complete();
       });
     }
 
-    const apiUrl = `${loginData.apiurl}/host/getVersion.json${this.authSession.value}`;
+    const authSession = this.authSession.value;
+    const apiUrl = `${loginData.apiurl}/host/getVersion.json${authSession}`;
+    
+    console.log('🔧 [NVR] Making API validation call to:', apiUrl);
+    console.log('🔧 [NVR] With auth session:', authSession);
     
     return this.http.get<any>(apiUrl).pipe(
       tap((response: any) => {
+        console.log('✅ [NVR] API validation response:', response);
         if (response.version) {
           this.setApiVersion(response.version);
+          console.log('✅ [NVR] API version set to:', response.version);
+        } else {
+          console.log('⚠️ [NVR] No version in API response');
         }
       }),
-      catchError(this.handleError)
+      catchError((error) => {
+        console.error('❌ [NVR] API validation failed:', error);
+        return this.handleError(error);
+      })
     );
   }
 
   loadMonitors(): Observable<Monitor[]> {
+    console.log('🔵 [NVR] loadMonitors() called');
+    
     const loginData = this.loginData.value;
     if (!loginData) {
+      console.error('❌ [NVR] No login data configured for loading monitors');
       return throwError('No login data configured');
     }
+
+    console.log('📋 [NVR] Loading monitors with login data:', {
+      apiurl: loginData.apiurl,
+      isUseAuth: loginData.isUseAuth
+    });
 
     const cacheKey = 'monitors';
     const cachedData = this.getCachedData(cacheKey);
     if (cachedData) {
+      console.log('✅ [NVR] Using cached monitors data:', cachedData);
       this.monitors.next(cachedData);
       return new Observable(observer => {
         observer.next(cachedData);
@@ -174,11 +234,17 @@ export class NvrService {
       });
     }
 
-    const apiUrl = `${loginData.apiurl}/monitors.json${this.authSession.value}`;
+    const authSession = this.authSession.value;
+    const apiUrl = `${loginData.apiurl}/monitors.json${authSession}`;
+    
+    console.log('🔧 [NVR] Making monitors API call to:', apiUrl);
+    console.log('🔧 [NVR] With auth session:', authSession);
     
     return this.http.get<any>(apiUrl).pipe(
       map(response => {
+        console.log('✅ [NVR] Monitors API response:', response);
         const monitors = response.monitors || [];
+        console.log('📊 [NVR] Found', monitors.length, 'monitors');
         
         const processedMonitors = monitors.map((monitor: Monitor) => {
           monitor.Monitor.connKey = this.generateConnKey();
@@ -193,11 +259,15 @@ export class NvrService {
           parseInt(a.Monitor.Sequence) - parseInt(b.Monitor.Sequence)
         );
 
+        console.log('✅ [NVR] Processed monitors:', processedMonitors);
         this.setCachedData(cacheKey, processedMonitors);
         this.monitors.next(processedMonitors);
         return processedMonitors;
       }),
-      catchError(this.handleError)
+      catchError((error) => {
+        console.error('❌ [NVR] Load monitors failed:', error);
+        return this.handleError(error);
+      })
     );
   }
 
@@ -356,7 +426,13 @@ export class NvrService {
   }
 
   private handleError(error: any): Observable<never> {
-    console.error('NVR Service Error:', error);
+    console.error('❌ [NVR] Service Error:', {
+      message: error?.message || String(error),
+      status: error?.status,
+      statusText: error?.statusText,
+      url: error?.url,
+      error: error
+    });
     return throwError(error);
   }
 
