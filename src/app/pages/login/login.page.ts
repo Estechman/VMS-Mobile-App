@@ -164,7 +164,7 @@ export class LoginPage implements OnInit {
         await this.eventServerService.init();
       }
 
-      const response = await this.nvrService.login(
+      const authResponse = await this.nvrService.login(
         loginData.serverName,
         loginData.username,
         loginData.password
@@ -174,13 +174,14 @@ export class LoginPage implements OnInit {
 
       this.store.dispatch(AppActions.setAuthentication({
         isAuthenticated: true,
-        authSession: response.access_token || '',
+        authSession: authResponse.access_token || '',
         username: loginData.username
       }));
 
       await this.saveLoginData(loginData);
       
       await this.nvrService.loadMonitors().toPromise();
+      
       this.router.navigate(['/monitors']);
       
     } catch (error) {

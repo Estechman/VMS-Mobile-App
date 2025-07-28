@@ -14,7 +14,9 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,
-      webSecurity: false // Allow CORS for ZoneMinder API calls
+      webSecurity: false, // Allow CORS for ZoneMinder API calls
+      allowRunningInsecureContent: true,
+      experimentalFeatures: true
     },
     icon: path.join(__dirname, 'dist/assets/icon/favicon.png'),
     titleBarStyle: 'default',
