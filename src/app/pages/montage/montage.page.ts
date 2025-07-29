@@ -283,6 +283,10 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
       try {
         const gridItem = this.gridStack?.addWidget(widget);
         if (gridItem && widgetElement) {
+          gridItem.style.setProperty('--monitor-width', `${monitor.gridScale}%`);
+          gridItem.setAttribute('data-monitor-scale', monitor.gridScale.toString());
+          gridItem.setAttribute('data-monitor-id', monitor.Monitor.Id);
+          
           const contentDiv = gridItem.querySelector('.grid-stack-item-content');
           if (contentDiv) {
             contentDiv.appendChild(widgetElement);
@@ -427,6 +431,12 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
       if (monitor) {
         monitor.gridScale = pos.size || 50;
         monitor.listDisplay = pos.display || 'show';
+        
+        const gridItem = document.querySelector(`[data-monitor-id="${monitor.Monitor.Id}"]`);
+        if (gridItem) {
+          (gridItem as HTMLElement).style.setProperty('--monitor-width', `${monitor.gridScale}%`);
+          (gridItem as HTMLElement).setAttribute('data-monitor-scale', monitor.gridScale.toString());
+        }
       }
     });
   }
@@ -445,9 +455,17 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     
     monitorsToResize.forEach(monitor => {
       monitor.gridScale = Math.max(5, Math.min(100, monitor.gridScale + delta));
+      
+      const gridItem = document.querySelector(`[data-monitor-id="${monitor.Monitor.Id}"]`);
+      if (gridItem) {
+        (gridItem as HTMLElement).style.setProperty('--monitor-width', `${monitor.gridScale}%`);
+        (gridItem as HTMLElement).setAttribute('data-monitor-scale', monitor.gridScale.toString());
+      }
     });
     
-    this.layoutGridItems();
+    if (this.gridStack) {
+      this.gridStack.compact();
+    }
     this.saveCurrentLayout();
   }
 
@@ -477,8 +495,17 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
               const size = Math.floor(100 / cols);
               this.monitors.forEach(monitor => {
                 monitor.gridScale = size;
+                
+                const gridItem = document.querySelector(`[data-monitor-id="${monitor.Monitor.Id}"]`);
+                if (gridItem) {
+                  (gridItem as HTMLElement).style.setProperty('--monitor-width', `${size}%`);
+                  (gridItem as HTMLElement).setAttribute('data-monitor-scale', size.toString());
+                }
               });
-              this.layoutGridItems();
+              
+              if (this.gridStack) {
+                this.gridStack.compact();
+              }
               this.saveCurrentLayout();
             }
           }

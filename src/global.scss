@@ -91,6 +91,11 @@
   transition: box-shadow 0.3s ease;
 }
 
+// Override GridStack width with percentage-based scaling like legacy system
+.grid-stack-item[data-monitor-scale] {
+  width: var(--monitor-width) !important;
+}
+
 .grid-stack-item:hover {
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
