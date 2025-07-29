@@ -4,7 +4,8 @@ import {
   IonGrid, IonRow, IonCol, IonCard, IonCardContent, IonButton, IonIcon,
   IonRefresher, IonRefresherContent, IonSpinner, IonBadge, IonPopover,
   IonList, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption,
-  IonToggle, IonRange, IonFab, IonFabButton, IonActionSheet, IonAlert
+  IonToggle, IonRange, IonFab, IonFabButton, IonActionSheet, IonAlert,
+  AlertController, ActionSheetController
 } from '@ionic/angular/standalone';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -67,7 +68,11 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   };
   private currentStreamState = this.streamState.SNAPSHOT_LOWQUALITY;
 
-  constructor(private nvrService: NvrService) {
+  constructor(
+    private nvrService: NvrService,
+    private alertController: AlertController,
+    private actionSheetController: ActionSheetController
+  ) {
     addIcons({ 
       refresh, videocam, videocamOff, camera, play, pause, move, grid,
       add, remove, bicycle, eye, save, trash, settings, resize, chevronDown,
@@ -234,15 +239,37 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     this.selectProfile(nextProfile);
   }
 
-  saveMontageProfile() {
+  async saveMontageProfile() {
     const positions = this.getCurrentLayout();
-    const profileName = prompt('Enter profile name:');
-    
-    if (profileName && profileName.trim()) {
-      this.nvrService.saveMontageProfile(profileName.trim(), positions);
-      this.currentProfileName = profileName.trim();
-      console.log('Profile saved:', profileName);
-    }
+    const alert = await this.alertController.create({
+      header: 'Save Profile',
+      message: 'Enter profile name:',
+      inputs: [
+        {
+          name: 'profileName',
+          type: 'text',
+          placeholder: 'My Profile'
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel'
+        },
+        {
+          text: 'Save',
+          handler: (data) => {
+            const profileName = data.profileName?.trim();
+            if (profileName) {
+              this.nvrService.saveMontageProfile(profileName, positions);
+              this.currentProfileName = profileName;
+              console.log('Profile saved:', profileName);
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   deleteMontageProfile() {
@@ -323,16 +350,41 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     this.saveCurrentLayout();
   }
 
-  resetSizesWithInput() {
-    const cols = prompt('Enter number of columns:');
-    if (cols && !isNaN(Number(cols))) {
-      const size = Math.floor(100 / Number(cols));
-      this.monitors.forEach(monitor => {
-        monitor.gridScale = size;
-      });
-      this.layoutGridItems();
-      this.saveCurrentLayout();
-    }
+  async resetSizesWithInput() {
+    const alert = await this.alertController.create({
+      header: 'Grid Size',
+      message: 'Enter number of columns:',
+      inputs: [
+        {
+          name: 'columns',
+          type: 'number',
+          placeholder: '4',
+          min: 1,
+          max: 10
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel'
+        },
+        {
+          text: 'Apply',
+          handler: (data) => {
+            const cols = parseInt(data.columns);
+            if (cols && !isNaN(cols) && cols > 0) {
+              const size = Math.floor(100 / cols);
+              this.monitors.forEach(monitor => {
+                monitor.gridScale = size;
+              });
+              this.layoutGridItems();
+              this.saveCurrentLayout();
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   squeezeMonitors() {
@@ -466,9 +518,73 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     this.isMinimal = !this.isMinimal;
   }
 
-  toggleHideUnhide() {
-    this.selectAllToggle = !this.selectAllToggle;
-    this.toggleAllMonitors();
+  async toggleHideUnhide() {
+    const actionSheet = await this.actionSheetController.create({
+      header: 'Monitor Visibility',
+      buttons: [
+        {
+          text: 'Show All Monitors',
+          handler: () => {
+            this.monitors.forEach(monitor => {
+              monitor.listDisplay = 'show';
+            });
+            this.layoutGridItems();
+            this.saveCurrentLayout();
+          }
+        },
+        {
+          text: 'Hide All Monitors',
+          handler: () => {
+            this.monitors.forEach(monitor => {
+              monitor.listDisplay = 'noshow';
+            });
+            this.layoutGridItems();
+            this.saveCurrentLayout();
+          }
+        },
+        {
+          text: 'Select Individual Monitors',
+          handler: () => {
+            this.showMonitorSelectionModal();
+          }
+        },
+        {
+          text: 'Cancel',
+          role: 'cancel'
+        }
+      ]
+    });
+    await actionSheet.present();
+  }
+
+  private async showMonitorSelectionModal() {
+    const alert = await this.alertController.create({
+      header: 'Select Monitors to Show',
+      inputs: this.monitors.map(monitor => ({
+        name: monitor.Monitor.Id,
+        type: 'checkbox',
+        label: monitor.Monitor.Name,
+        value: monitor.Monitor.Id,
+        checked: monitor.listDisplay === 'show'
+      })),
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel'
+        },
+        {
+          text: 'Apply',
+          handler: (selectedIds: string[]) => {
+            this.monitors.forEach(monitor => {
+              monitor.listDisplay = selectedIds.includes(monitor.Monitor.Id) ? 'show' : 'noshow';
+            });
+            this.layoutGridItems();
+            this.saveCurrentLayout();
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   toggleAllMonitors() {
