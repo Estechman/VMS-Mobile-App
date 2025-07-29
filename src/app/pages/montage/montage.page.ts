@@ -87,7 +87,23 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    setTimeout(() => this.initializeGridStack(), 100);
+    setTimeout(() => {
+      console.log('🔧 [MONTAGE] Initializing GridStack...');
+      console.log('🔧 [MONTAGE] GridStack available:', typeof GridStack);
+      console.log('🔧 [MONTAGE] Container element:', this.gridContainer?.nativeElement);
+      console.log('🔧 [MONTAGE] isLoading:', this.isLoading);
+      
+      if (!this.gridContainer?.nativeElement && !this.isLoading) {
+        console.log('🔧 [MONTAGE] Container not found, retrying in 200ms...');
+        setTimeout(() => this.initializeGridStack(), 200);
+      } else {
+        this.initializeGridStack();
+        
+        if (this.monitors.length > 0) {
+          setTimeout(() => this.layoutGridItems(), 100);
+        }
+      }
+    }, 1000);
   }
 
   ngOnDestroy() {
@@ -99,22 +115,40 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private initializeGridStack() {
-    if (!this.gridContainer?.nativeElement) return;
+    console.log('🔧 [MONTAGE] initializeGridStack called');
+    console.log('🔧 [MONTAGE] GridStack type:', typeof GridStack);
+    console.log('🔧 [MONTAGE] Container element:', this.gridContainer?.nativeElement);
     
-    this.gridStack = GridStack.init({
-      cellHeight: 200,
-      margin: 5,
-      animate: true,
-      float: true,
-      acceptWidgets: true,
-      removable: false,
-      disableDrag: !this.isDragMode,
-      disableResize: !this.isDragMode
-    }, this.gridContainer.nativeElement);
+    if (!this.gridContainer?.nativeElement) {
+      console.error('❌ [MONTAGE] Grid container element not found');
+      return;
+    }
+    
+    if (typeof GridStack === 'undefined') {
+      console.error('❌ [MONTAGE] GridStack library not loaded');
+      return;
+    }
+    
+    try {
+      this.gridStack = GridStack.init({
+        cellHeight: 200,
+        margin: 5,
+        animate: true,
+        float: true,
+        acceptWidgets: true,
+        removable: false,
+        disableDrag: !this.isDragMode,
+        disableResize: !this.isDragMode
+      }, this.gridContainer.nativeElement);
 
-    this.gridStack.on('change', (event, items) => {
-      this.saveCurrentLayout();
-    });
+      this.gridStack.on('change', (event, items) => {
+        this.saveCurrentLayout();
+      });
+      
+      console.log('✅ [MONTAGE] GridStack initialized successfully');
+    } catch (error) {
+      console.error('❌ [MONTAGE] GridStack initialization failed:', error);
+    }
   }
 
   private loadMonitors(forceRefresh = false) {
@@ -135,6 +169,9 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
         error: (error) => {
           console.error('Failed to load monitors:', error);
           this.isLoading = false;
+          if (this.monitors.length === 0) {
+            this.createMockMonitors();
+          }
         }
       })
     );
@@ -151,6 +188,37 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
       showSidebar: false,
       eventCount: 0
     };
+  }
+
+  private createMockMonitors() {
+    console.log('🔧 [MONTAGE] Creating mock monitors for testing...');
+    const mockMonitors: any[] = [];
+    for (let i = 1; i <= 12; i++) {
+      mockMonitors.push({
+        Monitor: {
+          Id: i.toString(),
+          Name: `Test Monitor ${i}`,
+          Function: 'Monitor',
+          Enabled: '1',
+          Width: '640',
+          Height: '480',
+          isRunning: i % 3 !== 0 ? 'true' : 'false' // Most monitors running
+        },
+        gridScale: 50,
+        listDisplay: 'show' as 'show' | 'noshow' | 'blank',
+        isAlarmed: i % 4 === 0, // Every 4th monitor is "alarmed"
+        isStamp: false,
+        selectStyle: '',
+        showSidebar: false,
+        eventCount: 0
+      });
+    }
+    this.monitors = mockMonitors as any;
+    console.log('✅ [MONTAGE] Created mock monitors:', this.monitors.length);
+    
+    if (this.gridStack) {
+      setTimeout(() => this.layoutGridItems(), 100);
+    }
   }
 
   doRefresh(event: any) {
@@ -178,29 +246,62 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private layoutGridItems() {
-    if (!this.gridStack) return;
+    console.log('🔧 [MONTAGE] layoutGridItems called');
+    console.log('🔧 [MONTAGE] GridStack instance:', this.gridStack);
+    console.log('🔧 [MONTAGE] Monitors count:', this.monitors.length);
+    
+    if (!this.gridStack) {
+      console.error('❌ [MONTAGE] GridStack not initialized - deferring layout');
+      setTimeout(() => this.layoutGridItems(), 200);
+      return;
+    }
     
     this.gridStack.removeAll();
     
+    let visibleCount = 0;
     this.monitors.forEach((monitor, index) => {
-      if (monitor.listDisplay === 'noshow') return;
+      if (monitor.listDisplay === 'noshow') {
+        console.log('🔧 [MONTAGE] Skipping hidden monitor:', monitor.Monitor.Name);
+        return;
+      }
+      
+      visibleCount++;
+      console.log('🔧 [MONTAGE] Adding monitor:', monitor.Monitor.Name, 'ID:', monitor.Monitor.Id);
+      
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = this.createMonitorElement(monitor);
+      const widgetElement = tempDiv.firstElementChild as HTMLElement;
       
       const widget: GridStackWidget = {
         id: monitor.Monitor.Id,
         x: (index % 4) * 3,
         y: Math.floor(index / 4) * 3,
         w: Math.max(1, Math.floor(monitor.gridScale / 25)),
-        h: Math.max(1, Math.floor(monitor.gridScale / 25)),
-        content: this.createMonitorElement(monitor)
+        h: Math.max(1, Math.floor(monitor.gridScale / 25))
       };
       
-      this.gridStack?.addWidget(widget);
+      try {
+        const gridItem = this.gridStack?.addWidget(widget);
+        if (gridItem && widgetElement) {
+          const contentDiv = gridItem.querySelector('.grid-stack-item-content');
+          if (contentDiv) {
+            contentDiv.appendChild(widgetElement);
+          }
+        }
+        console.log('✅ [MONTAGE] Added widget for monitor:', monitor.Monitor.Name);
+      } catch (error) {
+        console.error('❌ [MONTAGE] Failed to add widget for monitor:', monitor.Monitor.Name, error);
+      }
     });
+    
+    console.log('✅ [MONTAGE] Layout complete. Visible monitors:', visibleCount);
   }
 
   private createMonitorElement(monitor: MontageMonitor): string {
     const streamUrl = this.generateStreamUrl(monitor);
     const statusColor = this.getMonitorStatusColor(monitor);
+    const statusIcon = monitor.Monitor.isRunning === 'true' ? '📹' : '❌';
+    const stampIcon = monitor.isStamp ? '📌' : '';
     
     return `
       <div class="monitor-widget" data-monitor-id="${monitor.Monitor.Id}">
@@ -210,10 +311,10 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
                class="monitor-stream-image ${monitor.selectStyle}"
                onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk9mZmxpbmU8L3RleHQ+PC9zdmc+'">
           <div class="monitor-overlay">
-            <ion-badge color="${statusColor}" class="monitor-status">
-              <ion-icon name="${monitor.Monitor.isRunning === 'true' ? 'videocam' : 'videocam-off'}"></ion-icon>
-            </ion-badge>
-            ${monitor.isStamp ? '<ion-icon name="pin" class="stamp-indicator"></ion-icon>' : ''}
+            <span class="monitor-status status-${statusColor}">
+              ${statusIcon}
+            </span>
+            ${stampIcon ? `<span class="stamp-indicator">${stampIcon}</span>` : ''}
           </div>
         </div>
         <div class="monitor-info">

@@ -42,7 +42,8 @@
             ],
             "styles": [
               "src/theme/variables.css",
-              "src/global.scss"
+              "src/global.scss",
+              "node_modules/gridstack/dist/gridstack.css"
             ],
             "scripts": []
           },
@@ -90,7 +91,8 @@
               "browserTarget": "app:build:production"
             },
             "development": {
-              "browserTarget": "app:build:development"
+              "browserTarget": "app:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"
@@ -124,7 +126,8 @@
             ],
             "styles": [
               "src/theme/variables.css",
-              "src/global.scss"
+              "src/global.scss",
+              "node_modules/gridstack/dist/gridstack.css"
             ],
             "scripts": []
           }
