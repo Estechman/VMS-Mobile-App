@@ -66,13 +66,17 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     ACTIVE: 3,
     STOPPED: 4
   };
-  private currentStreamState = this.streamState.SNAPSHOT_LOWQUALITY;
+  private currentStreamState = this.streamState.SNAPSHOT;
 
   constructor(
     private nvrService: NvrService,
     private alertController: AlertController,
     private actionSheetController: ActionSheetController
   ) {
+    console.log('=== MONTAGE DEBUG: Constructor called ===');
+    console.log('Available stream states:', this.streamState);
+    console.log('Initial stream state set to SNAPSHOT (normal quality):', this.streamState.SNAPSHOT);
+    
     addIcons({ 
       refresh, videocam, videocamOff, camera, play, pause, move, grid,
       add, remove, bicycle, eye, save, trash, settings, resize, chevronDown,
@@ -81,6 +85,10 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit() {
+    console.log('=== MONTAGE DEBUG: ngOnInit called ===');
+    console.log('Current stream state:', this.currentStreamState);
+    console.log('Stream state enum:', this.streamState);
+    
     this.loadMonitors();
     this.startIntervals();
     this.currentProfileName = this.nvrService.getCurrentMontageProfile() || 'Default';
@@ -191,7 +199,9 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private createMockMonitors() {
-    console.log('🔧 [MONTAGE] Creating mock monitors for testing...');
+    console.log('=== MONTAGE DEBUG: Creating mock monitors for testing ===');
+    console.log('Current stream state before mock creation:', this.currentStreamState);
+    
     const mockMonitors: any[] = [];
     for (let i = 1; i <= 12; i++) {
       mockMonitors.push({
@@ -230,11 +240,10 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
 
   private startIntervals() {
     const loginData = this.nvrService.getLogin();
-    const refreshSec = loginData?.refreshSec || 30;
-    
-    this.refreshInterval = interval(refreshSec * 1000).subscribe(() => {
-      this.loadMonitors(true);
-    });
+    // const refreshSec = loginData?.refreshSec || 30;
+    // this.refreshInterval = interval(refreshSec * 1000).subscribe(() => {
+    //   this.loadMonitors(true);
+    // });
     
     this.alarmInterval = interval(5000).subscribe(() => {
       this.checkAlarmStatus();
@@ -591,21 +600,36 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   generateStreamUrl(monitor: MontageMonitor): string {
+    console.log(`=== MONTAGE DEBUG: Generating stream URL for monitor ${monitor.Monitor.Id} ===`);
+    console.log('Current stream state:', this.currentStreamState);
+    console.log('Stream state enum values:', this.streamState);
+    console.log('Monitor listDisplay:', monitor.listDisplay);
+    
     if (this.currentStreamState === this.streamState.STOPPED || monitor.listDisplay === 'noshow') {
+      console.log('Returning empty URL - stopped or hidden');
       return '';
     }
     
     const loginData = this.nvrService.getLogin();
-    if (!loginData) return '';
+    console.log('Login data for stream URL:', loginData);
+    if (!loginData) {
+      console.log('No login data available');
+      return '';
+    }
     
     let mode = 'single';
-    let scale = monitor.gridScale;
+    let scale = loginData.montageQuality || 50;
+    console.log('Initial scale from montageQuality:', scale);
     
     if (this.currentStreamState === this.streamState.SNAPSHOT_LOWQUALITY) {
       mode = 'single';
       scale = 10;
+      console.log('Using SNAPSHOT_LOWQUALITY - scale set to 10');
     } else if (this.currentStreamState === this.streamState.ACTIVE) {
       mode = 'jpeg';
+      console.log('Using ACTIVE mode - jpeg streaming');
+    } else {
+      console.log('Using default SNAPSHOT mode with scale:', scale);
     }
     
     const streamingURL = monitor.Monitor.streamingURL || loginData.streamingurl;
@@ -621,16 +645,21 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
       stream += `&${loginData.authSession}`;
     }
     
+    console.log('Generated stream URL:', stream);
     return stream;
   }
 
   switchToLiveStreaming() {
+    console.log('=== MONTAGE DEBUG: Switching to live streaming ===');
     this.currentStreamState = this.streamState.ACTIVE;
+    console.log('New stream state:', this.currentStreamState);
     this.layoutGridItems();
   }
 
   switchToSnapshots() {
+    console.log('=== MONTAGE DEBUG: Switching to snapshots ===');
     this.currentStreamState = this.streamState.SNAPSHOT;
+    console.log('New stream state:', this.currentStreamState);
     this.layoutGridItems();
   }
 
