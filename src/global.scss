@@ -73,3 +73,159 @@
 .button-container ion-button {
   flex: 1;
 }
+
+// GridStack styles for advanced montage
+.grid-stack {
+  background: #f5f5f5;
+  min-height: 400px;
+  padding: 10px;
+}
+
+.grid-stack-item {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.grid-stack-item:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.grid-stack-item-content {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 100%;
+}
+
+.monitor-widget {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.monitor-stream-container {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: #000;
+}
+
+.monitor-stream-container.alarmed {
+  animation: flash 1s infinite;
+}
+
+@keyframes flash {
+  0%, 50% { background-color: rgba(255, 0, 0, 0.3); }
+  51%, 100% { background-color: transparent; }
+}
+
+.monitor-stream-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.monitor-stream-image.dragborder {
+  border: 2px dashed #007bff;
+}
+
+.monitor-stream-image.dragborder-selected {
+  border: 3px solid #007bff;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+
+.monitor-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+
+.monitor-status {
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  padding: 4px;
+}
+
+.stamp-indicator {
+  background: rgba(255, 193, 7, 0.9);
+  border-radius: 50%;
+  padding: 4px;
+  color: white;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.monitor-info {
+  padding: 8px;
+  background: white;
+  border-top: 1px solid #eee;
+  min-height: 50px;
+}
+
+.monitor-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.monitor-id {
+  font-size: 12px;
+  color: #666;
+}
+
+.montage-controls {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px;
+  overflow-x: auto;
+}
+
+.minimal {
+  --ion-toolbar-background: transparent;
+}
+
+.minimal ion-header {
+  display: none;
+}
+
+// Legacy montage grid styles for compatibility
+.montage-grid {
+  padding: 8px;
+}
+
+// Timeline view styles
+.timeline-container {
+  height: 400px;
+  width: 100%;
+}
+
+.timeline-controls {
+  padding: 16px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+// Events list styles
+.event-item {
+  border-bottom: 1px solid var(--ion-color-light);
+}
+
+.event-thumbnail {
+  width: 60px;
+  height: 45px;
+  object-fit: cover;
+  border-radius: 4px;
+}

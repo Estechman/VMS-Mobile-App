@@ -2,51 +2,110 @@
   <ion-toolbar>
     <ion-buttons slot="start">
       <ion-menu-button></ion-menu-button>
+      <ion-button fill="clear" (click)="toggleHideUnhide()" title="Show/Hide Monitors">
+        <ion-icon name="eye"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" (click)="showSubMenu = !showSubMenu" title="Toggle Controls">
+        <ion-icon name="chevron-down"></ion-icon>
+      </ion-button>
     </ion-buttons>
-    <ion-title>Montage</ion-title>
+    
+    <ion-title>{{ currentProfileName }}</ion-title>
+    
     <ion-buttons slot="end">
-      <ion-button fill="clear" (click)="loadMonitors(true)">
-        <ion-icon name="refresh"></ion-icon>
+      <ion-button fill="clear" (click)="toggleDragMode()" title="Drag Mode" 
+                  [color]="isDragMode ? 'primary' : 'medium'">
+        <ion-icon name="move"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" (click)="resetSizesWithInput()" title="Grid Size">
+        <ion-icon name="grid"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" (click)="toggleMinimal()" title="Fullscreen">
+        <ion-icon name="resize"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
+  
+  <!-- Advanced Controls Submenu -->
+  <ion-toolbar *ngIf="showSubMenu && !isMinimal">
+    <div class="montage-controls">
+      <ion-button size="small" fill="outline" (click)="increaseSize()" title="Increase Size">
+        <ion-icon name="add"></ion-icon>
+      </ion-button>
+      <ion-button size="small" fill="outline" (click)="decreaseSize()" title="Decrease Size">
+        <ion-icon name="remove"></ion-icon>
+      </ion-button>
+      <ion-button size="small" fill="outline" (click)="squeezeMonitors()" title="Reflow">
+        <ion-icon name="resize"></ion-icon>
+      </ion-button>
+      <ion-button size="small" fill="outline" (click)="toggleCycling()" 
+                  [color]="isCycling() ? 'primary' : 'medium'" title="Cycle Profiles">
+        <ion-icon name="bicycle"></ion-icon>
+      </ion-button>
+      <ion-button size="small" fill="outline" (click)="switchMontageProfile()" title="Switch Profile">
+        <ion-icon name="settings"></ion-icon>
+      </ion-button>
+      <ion-button size="small" fill="outline" (click)="saveMontageProfile()" title="Save Profile">
+        <ion-icon name="save"></ion-icon>
+      </ion-button>
+      <ion-button size="small" fill="outline" (click)="deleteMontageProfile()" title="Delete Profile">
+        <ion-icon name="trash"></ion-icon>
+      </ion-button>
+    </div>
+  </ion-toolbar>
 </ion-header>
 
-<ion-content>
+<ion-content [class.minimal]="isMinimal">
   <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
   <div *ngIf="isLoading" class="loading-container">
     <ion-spinner name="crescent"></ion-spinner>
-    <p>Loading monitors...</p>
+    <p>Arranging monitors...</p>
   </div>
 
-  <ion-grid *ngIf="!isLoading">
-    <ion-row>
-      <ion-col size="12" size-md="6" size-lg="4" size-xl="3" *ngFor="let monitor of monitors">
-        <ion-card>
-          <div class="monitor-stream-container">
-            <img [src]="generateStreamUrl(monitor)" 
-                 [alt]="monitor.Monitor.Name"
-                 (error)="onImageError($event, monitor)"
-                 class="monitor-stream-image">
-            <div class="monitor-overlay">
-              <div class="monitor-status" [color]="getMonitorStatusColor(monitor)">
-                <ion-icon [name]="monitor.Monitor.isRunning === 'true' ? 'videocam' : 'videocam-off'"></ion-icon>
-              </div>
-            </div>
-          </div>
-          <ion-card-content>
-            <h3>{{ monitor.Monitor.Name }}</h3>
-            <p><strong>ID:</strong> {{ monitor.Monitor.Id }}</p>
-            <p><strong>Function:</strong> {{ monitor.Monitor.Function }}</p>
-            <p><strong>Status:</strong> {{ monitor.Monitor.isRunningText || (monitor.Monitor.Enabled === '1' ? 'Enabled' : 'Disabled') }}</p>
-          </ion-card-content>
-        </ion-card>
-      </ion-col>
-    </ion-row>
-  </ion-grid>
+  <!-- GridStack Container -->
+  <div #gridContainer class="grid-stack" *ngIf="!isLoading"></div>
+
+  <!-- Streaming Mode Controls -->
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed" *ngIf="!isMinimal">
+    <ion-fab-button size="small">
+      <ion-icon name="videocam"></ion-icon>
+    </ion-fab-button>
+    <ion-fab-list side="top">
+      <ion-fab-button (click)="switchToSnapshots()" title="Snapshots">
+        <ion-icon name="camera"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button (click)="switchToLiveStreaming()" title="Live Streaming">
+        <ion-icon name="videocam"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button (click)="loadMonitors(true)" title="Refresh">
+        <ion-icon name="refresh"></ion-icon>
+      </ion-fab-button>
+    </ion-fab-list>
+  </ion-fab>
+
+  <!-- Minimal Mode Controls -->
+  <ion-fab vertical="bottom" horizontal="start" slot="fixed" *ngIf="isMinimal">
+    <ion-fab-button size="small">
+      <ion-icon name="chevron-up"></ion-icon>
+    </ion-fab-button>
+    <ion-fab-list side="top">
+      <ion-fab-button (click)="increaseSize()" title="Increase Size">
+        <ion-icon name="add"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button (click)="decreaseSize()" title="Decrease Size">
+        <ion-icon name="remove"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button (click)="squeezeMonitors()" title="Reflow">
+        <ion-icon name="resize"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button (click)="toggleMinimal()" title="Exit Fullscreen">
+        <ion-icon name="close"></ion-icon>
+      </ion-fab-button>
+    </ion-fab-list>
+  </ion-fab>
 
   <div *ngIf="!isLoading && monitors.length === 0" class="empty-state">
     <p>No active monitors found</p>
@@ -61,6 +120,15 @@
   align-items: center;
   justify-content: center;
   height: 50vh;
+}
+
+.montage-grid {
+  padding: 8px;
+}
+
+.monitor-card {
+  margin: 4px;
+  border-radius: 8px;
 }
 
 .monitor-stream-container {

@@ -63,6 +63,7 @@
     "@capacitor/push-notifications": "^5.1.2",
     "@capacitor/splash-screen": "^5.0.8",
     "@capacitor/status-bar": "^5.0.8",
+    "@types/gridstack": "^0.5.0",
     "angular": "^1.5.3",
     "angular-animate": "^1.5.3",
     "angular-cookies": "^1.8.3",
@@ -104,6 +105,7 @@
     "electron-window-state": "^5.0.3",
     "es-abstract": "^1.23.7",
     "function-bind": "^1.1.2",
+    "gridstack": "^12.2.2",
     "gulp-clean-css": "^4.3.0",
     "gulp-sass": "^6.0.0",
     "has": "^1.0.4",
@@ -121,10 +123,13 @@
     "minimist": "^1.2.8",
     "mkdirp": "^3.0.1",
     "moment": "^2.29.4",
+    "moment-timezone": "^0.6.0",
     "object-is": "^1.1.6",
     "object-keys": "^1.1.1",
     "regexp.prototype.flags": "^1.5.3",
     "sass": "^1.83.0",
+    "vis-data": "^8.0.1",
+    "vis-timeline": "^8.2.1",
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
@@ -151,7 +156,7 @@
     "@ionic/v1-toolkit": "^3.2.20",
     "@ngrx/effects": "^16.3.0",
     "@ngrx/store": "^16.3.0",
-    "@sentry/angular": "^9.38.0",
+    "@sentry/angular": "9.38.0",
     "@sentry/capacitor": "^2.1.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@types/jest": "^30.0.0",
@@ -168,7 +173,7 @@
     "css-loader": "^6.8.1",
     "cypress": "^14.5.2",
     "dotenv": "^16.4.7",
-    "electron": "^33.2.1",
+    "electron": "^33.4.11",
     "electron-builder": "^25.1.8",
     "eslint": "^8.56.0",
     "file-loader": "^6.2.0",
@@ -199,6 +204,7 @@
     "ng": "ng",
     "start": "ng serve",
     "electron": "electron .",
+    "electron:build:mac": "npm run build && electron-builder --mac --publish=never",
     "dist-win": "./electron_js/sync_versions.sh && ./node_modules/.bin/electron-builder -w",
     "dist-lin": "./electron_js/sync_versions.sh && ./node_modules/.bin/electron-builder -l",
     "dist-mac": "./electron_js/sync_versions.sh && ./node_modules/.bin/electron-builder -m",
@@ -229,7 +235,7 @@
     "cap:open:ios": "npm run build && npx cap sync && npx cap open ios",
     "cap:open:android": "npm run build && npx cap sync && npx cap open android"
   },
-  "main": "electron_js/main.js",
+  "main": "electron.js",
   "build": {
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "appId": "com.zoneminder.zmninja",
@@ -241,8 +247,8 @@
       "buildResources": "electron_js/icons"
     },
     "files": [
-      "electron_js/main.js",
-      "www/**/*",
+      "electron.js",
+      "dist/**/*",
       "!node_modules/**/*",
       "resources/icon.png"
     ],
@@ -274,7 +280,7 @@
       "category": "productivity",
       "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
       "target": {
-        "target": "dmg",
+        "target": "zip",
         "arch": [
           "arm64",
           "x64"

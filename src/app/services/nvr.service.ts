@@ -25,6 +25,20 @@ export interface LoginData {
   isKiosk: boolean;
   keepAwake: boolean;
   authSession: string;
+  enableAlarmCount?: boolean;
+  minAlarmCount?: number;
+  objectDetectionFilter?: boolean;
+  refreshSec?: number;
+  montageQuality?: number;
+  montageliveFPS?: number;
+  packeryPositions?: string;
+  maxMontage?: number;
+  currentZMGroupName?: string;
+  showMontageSubMenu?: boolean;
+  packeryPositionsArray?: { [key: string]: string };
+  currentMontageProfile?: string;
+  cycleMontageProfiles?: boolean;
+  cycleMontageInterval?: number;
 }
 
 export interface Monitor {
@@ -44,6 +58,10 @@ export interface Monitor {
     isRunning?: string;
     isRunningText?: string;
     color?: string;
+    listDisplay?: string;
+    gridScale?: number;
+    showSidebar?: boolean;
+    regenHandle?: any;
     char?: string;
   };
   Monitor_Status?: {
@@ -101,7 +119,7 @@ export class NvrService {
     this.monitors.next(monitors);
   }
 
-  getEvents(): Observable<Event[]> {
+  getEventsObservable(): Observable<Event[]> {
     return this.events.asObservable();
   }
 
@@ -674,11 +692,197 @@ export class NvrService {
     return forkJoin(statusChecks);
   }
 
+  getEvents(monitorId: number = 0, pageId: number = 1, loadingStr: string = '', startTime: string = '', endTime: string = '', noObjectFilter: boolean = false, monListFilter: string = ''): Observable<any> {
+    const loginData = this.getLogin();
+    if (!loginData) return throwError(() => new Error('Not logged in'));
+
+    let myurl = `/api/events/index`;
+    
+    if (monitorId) {
+      myurl += `/MonitorId:${monitorId}`;
+    }
+    
+    if (startTime && endTime) {
+      myurl += `/StartTime <=:${endTime}/EndTime >=:${startTime}`;
+    }
+    
+    if (loginData.enableAlarmCount && loginData.minAlarmCount) {
+      myurl += `/AlarmFrames >=:${loginData.minAlarmCount}`;
+    }
+    
+    if (monListFilter) {
+      myurl += monListFilter;
+    }
+    
+    if (loginData.objectDetectionFilter && !noObjectFilter) {
+      myurl += '/Notes REGEXP:detected:';
+    }
+
+    myurl += `.json?sort=StartTime&direction=desc&page=${pageId}`;
+    
+    const authSession = this.authSession.value;
+    console.log('🔧 [NVR] getEvents URL:', `${myurl}${authSession}`);
+    return this.http.get<any>(`${myurl}${authSession}`);
+  }
+
+  getEventsPages(monitorId: number = 0, startTime: string = '', endTime: string = '', noObjectFilter: boolean = false): Observable<any> {
+    const loginData = this.getLogin();
+    if (!loginData) return throwError(() => new Error('Not logged in'));
+
+    let myurl = `/api/events/index`;
+    
+    if (monitorId) {
+      myurl += `/MonitorId:${monitorId}`;
+    }
+    
+    if (startTime && endTime) {
+      myurl += `/StartTime <=:${endTime}/EndTime >=:${startTime}`;
+    }
+
+    myurl += `.json?sort=StartTime&direction=desc&page=1&limit=1`;
+    
+    const authSession = this.authSession.value;
+    console.log('🔧 [NVR] getEventsPages URL:', `${myurl}${authSession}`);
+    return this.http.get<any>(`${myurl}${authSession}`);
+  }
+
+  generateStreamUrlSync(monitorId: string | number, mode: string = 'single', scale: number = 100): string {
+    const loginData = this.getLogin();
+    if (!loginData) return '';
+
+    const monitor = this.findMonitorById(String(monitorId));
+    if (!monitor) {
+      console.warn('🔧 [NVR] Monitor not found for stream generation:', monitorId);
+      return '';
+    }
+
+    const streamingURL = monitor.Monitor.streamingURL || loginData.streamingurl;
+    const rand = new Date().getTime();
+    
+    let stream = `${streamingURL}/nph-zms?mode=${mode}&monitor=${monitorId}&scale=${scale}&rand=${rand}`;
+    
+    if (loginData.authSession) {
+      stream += `&${loginData.authSession}`;
+    }
+    
+    console.log('🔧 [NVR] Generated stream URL:', stream);
+    return stream;
+  }
+
+  getDaemonStatus(): Observable<any> {
+    const loginData = this.getLogin();
+    if (!loginData) return throwError(() => new Error('Not logged in'));
+
+    const authSession = this.authSession.value;
+    const apiUrl = `/api/host/daemonCheck.json${authSession}`;
+    return this.http.get<any>(apiUrl);
+  }
+
+  getSystemLoad(): Observable<any> {
+    const loginData = this.getLogin();
+    if (!loginData) return throwError(() => new Error('Not logged in'));
+
+    const authSession = this.authSession.value;
+    const apiUrl = `/api/host/getLoad.json${authSession}`;
+    return this.http.get<any>(apiUrl);
+  }
+
+  getStorageInfo(): Observable<any> {
+    const loginData = this.getLogin();
+    if (!loginData) return throwError(() => new Error('Not logged in'));
+
+    const authSession = this.authSession.value;
+    const apiUrl = `/api/storage.json${authSession}`;
+    return this.http.get<any>(apiUrl);
+  }
+
+  getServerInfo(): Observable<any> {
+    const loginData = this.getLogin();
+    if (!loginData) return throwError(() => new Error('Not logged in'));
+
+    const authSession = this.authSession.value;
+    const apiUrl = `/api/servers.json${authSession}`;
+    return this.http.get<any>(apiUrl);
+  }
+
+  private findMonitorById(id: string): Monitor | undefined {
+    return this.monitors.value.find(m => String(m.Monitor.Id) === String(id));
+  }
+
   debug(message: string): void {
     console.log(`[NVR] ${message}`);
   }
 
   log(message: string): void {
     console.log(`[NVR] ${message}`);
+  }
+
+  getAuthSession(): string {
+    return this.authSession.value;
+  }
+
+  getMontageProfiles(): { [key: string]: string } {
+    const loginData = this.getLogin();
+    return loginData?.packeryPositionsArray || {};
+  }
+
+  saveMontageProfile(name: string, positions: any[]): void {
+    const loginData = this.getLogin();
+    if (!loginData) return;
+    
+    if (!loginData.packeryPositionsArray) {
+      loginData.packeryPositionsArray = {};
+    }
+    
+    loginData.packeryPositionsArray[name] = JSON.stringify(positions);
+    loginData.currentMontageProfile = name;
+    this.setLogin(loginData);
+    console.log('🔧 [NVR] Saved montage profile:', name);
+  }
+
+  deleteMontageProfile(name: string): void {
+    const loginData = this.getLogin();
+    if (!loginData?.packeryPositionsArray) return;
+    
+    delete loginData.packeryPositionsArray[name];
+    if (loginData.currentMontageProfile === name) {
+      loginData.currentMontageProfile = '';
+    }
+    this.setLogin(loginData);
+    console.log('🔧 [NVR] Deleted montage profile:', name);
+  }
+
+  switchMontageProfile(name: string): any[] | null {
+    const loginData = this.getLogin();
+    if (!loginData?.packeryPositionsArray?.[name]) return null;
+    
+    loginData.currentMontageProfile = name;
+    this.setLogin(loginData);
+    
+    try {
+      const positions = JSON.parse(loginData.packeryPositionsArray[name]);
+      console.log('🔧 [NVR] Switched to montage profile:', name);
+      return positions;
+    } catch (e) {
+      console.error('Error parsing montage profile:', e);
+      return null;
+    }
+  }
+
+  getCurrentMontageProfile(): string {
+    return this.getLogin()?.currentMontageProfile || '';
+  }
+
+  isMontageProfileCycling(): boolean {
+    return this.getLogin()?.cycleMontageProfiles || false;
+  }
+
+  toggleMontageProfileCycling(): void {
+    const loginData = this.getLogin();
+    if (!loginData) return;
+    
+    loginData.cycleMontageProfiles = !loginData.cycleMontageProfiles;
+    this.setLogin(loginData);
+    console.log('🔧 [NVR] Montage profile cycling:', loginData.cycleMontageProfiles ? 'enabled' : 'disabled');
   }
 }
