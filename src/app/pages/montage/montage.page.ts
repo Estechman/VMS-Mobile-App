@@ -142,11 +142,14 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
         cellHeight: 200,
         margin: 5,
         animate: true,
-        float: true,
+        float: false,
         acceptWidgets: true,
         removable: false,
         disableDrag: !this.isDragMode,
-        disableResize: !this.isDragMode
+        disableResize: !this.isDragMode,
+        column: 12,
+        minRow: 1,
+        staticGrid: false
       }, this.gridContainer.nativeElement);
 
       this.gridStack.on('change', (event, items) => {
@@ -277,30 +280,9 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
       visibleCount++;
       console.log('🔧 [MONTAGE] Adding monitor:', monitor.Monitor.Name, 'ID:', monitor.Monitor.Id);
       
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = this.createMonitorElement(monitor);
-      const widgetElement = tempDiv.firstElementChild as HTMLElement;
-      
-      const widget: GridStackWidget = {
-        id: monitor.Monitor.Id,
-        x: (index % 4) * 3,
-        y: Math.floor(index / 4) * 3,
-        w: Math.max(1, Math.floor(monitor.gridScale / 25)),
-        h: Math.max(1, Math.floor(monitor.gridScale / 25))
-      };
-      
       try {
-        const gridItem = this.gridStack?.addWidget(widget);
-        if (gridItem && widgetElement) {
-          gridItem.style.setProperty('--monitor-width', `${monitor.gridScale}%`);
-          gridItem.setAttribute('data-monitor-scale', monitor.gridScale.toString());
-          gridItem.setAttribute('data-monitor-id', monitor.Monitor.Id);
-          
-          const contentDiv = gridItem.querySelector('.grid-stack-item-content');
-          if (contentDiv) {
-            contentDiv.appendChild(widgetElement);
-          }
-        }
+        const widgetElement = this.createMonitorElement(monitor);
+        this.gridStack?.addWidget(widgetElement);
         console.log('✅ [MONTAGE] Added widget for monitor:', monitor.Monitor.Name);
       } catch (error) {
         console.error('❌ [MONTAGE] Failed to add widget for monitor:', monitor.Monitor.Name, error);
@@ -310,24 +292,45 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     console.log('✅ [MONTAGE] Layout complete. Visible monitors:', visibleCount);
   }
 
-  private createMonitorElement(monitor: MontageMonitor): string {
+  private createMonitorElement(monitor: MontageMonitor): HTMLElement {
+    console.log('🔧 [MONTAGE] Creating element for monitor:', monitor.Monitor.Name, 'ID:', monitor.Monitor.Id);
+    
+    const widget = document.createElement('div');
+    widget.className = 'grid-stack-item';
+    widget.setAttribute('data-gs-id', monitor.Monitor.Id);
+    
+    const gridScale = parseInt((monitor.Monitor.gridScale || 50).toString()) || 50;
+    widget.style.width = `${gridScale}%`;
+    widget.style.minWidth = `${Math.max(gridScale, 20)}%`;
+    widget.style.height = 'auto';
+    widget.style.aspectRatio = '16/9';
+    widget.style.position = 'relative';
+    widget.style.marginBottom = '10px';
+    
+    console.log('🔧 [MONTAGE] Applied percentage width:', gridScale + '%', 'to monitor', monitor.Monitor.Id);
+    
+    const content = document.createElement('div');
+    content.className = 'grid-stack-item-content monitor-widget';
+    
     const streamUrl = this.generateStreamUrl(monitor);
     const statusColor = this.getMonitorStatusColor(monitor);
     const statusIcon = monitor.Monitor.isRunning === 'true' ? '📹' : '❌';
     const stampIcon = monitor.isStamp ? '📌' : '';
     
-    return `
+    console.log('🔧 [MONTAGE] Stream URL for monitor', monitor.Monitor.Id, ':', streamUrl);
+    
+    content.innerHTML = `
       <div class="monitor-widget" data-monitor-id="${monitor.Monitor.Id}">
         <div class="monitor-stream-container ${monitor.isAlarmed ? 'alarmed' : ''}">
-          <img src="${streamUrl}" 
+          <img class="monitor-stream-image ${monitor.selectStyle || ''}" 
+               src="${streamUrl}" 
                alt="${monitor.Monitor.Name}"
-               class="monitor-stream-image ${monitor.selectStyle}"
-               onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk9mZmxpbmU8L3RleHQ+PC9zdmc+'">
+               onerror="this.src='assets/img/noimage.png'">
           <div class="monitor-overlay">
-            <span class="monitor-status status-${statusColor}">
-              ${statusIcon}
-            </span>
-            ${stampIcon ? `<span class="stamp-indicator">${stampIcon}</span>` : ''}
+            <div class="monitor-status" style="background-color: ${statusColor}">
+              <ion-icon name="videocam"></ion-icon>
+            </div>
+            ${monitor.isStamp ? '<div class="stamp-indicator"><ion-icon name="bookmark"></ion-icon></div>' : ''}
           </div>
         </div>
         <div class="monitor-info">
@@ -336,6 +339,9 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
         </div>
       </div>
     `;
+    
+    widget.appendChild(content);
+    return widget;
   }
 
   switchMontageProfile() {
@@ -459,21 +465,31 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private adjustMonitorSizes(delta: number) {
+    console.log('🔧 [MONTAGE] Adjusting monitor sizes by:', delta);
+    
     const selectedMonitors = this.monitors.filter(m => m.selectStyle === 'dragborder-selected');
     const monitorsToResize = selectedMonitors.length > 0 ? selectedMonitors : this.monitors;
     
     monitorsToResize.forEach(monitor => {
-      monitor.gridScale = Math.max(5, Math.min(100, monitor.gridScale + delta));
+      const currentScale = parseInt((monitor.Monitor.gridScale || 50).toString()) || 50;
+      const newScale = Math.max(5, Math.min(100, currentScale + (delta * 5)));
+      monitor.Monitor.gridScale = newScale;
       
-      const gridItem = document.querySelector(`[data-monitor-id="${monitor.Monitor.Id}"]`);
-      if (gridItem) {
-        (gridItem as HTMLElement).style.setProperty('--monitor-width', `${monitor.gridScale}%`);
-        (gridItem as HTMLElement).setAttribute('data-monitor-scale', monitor.gridScale.toString());
+      const element = document.querySelector(`[data-gs-id="${monitor.Monitor.Id}"]`) as HTMLElement;
+      if (element) {
+        element.style.width = `${newScale}%`;
+        element.style.minWidth = `${Math.max(newScale, 20)}%`;
+        console.log('🔧 [MONTAGE] Updated DOM element width for monitor', monitor.Monitor.Id, 'to', newScale + '%');
       }
+      
+      console.log('🔧 [MONTAGE] Monitor', monitor.Monitor.Id, 'scale changed from', currentScale, 'to', newScale);
     });
     
     if (this.gridStack) {
-      this.gridStack.compact();
+      setTimeout(() => {
+        this.gridStack?.compact();
+        console.log('🔧 [MONTAGE] GridStack compacted after size adjustment');
+      }, 100);
     }
     this.saveCurrentLayout();
   }
@@ -503,12 +519,12 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
             if (cols && !isNaN(cols) && cols > 0) {
               const size = Math.floor(100 / cols);
               this.monitors.forEach(monitor => {
-                monitor.gridScale = size;
+                monitor.Monitor.gridScale = size;
                 
-                const gridItem = document.querySelector(`[data-monitor-id="${monitor.Monitor.Id}"]`);
-                if (gridItem) {
-                  (gridItem as HTMLElement).style.setProperty('--monitor-width', `${size}%`);
-                  (gridItem as HTMLElement).setAttribute('data-monitor-scale', size.toString());
+                const element = document.querySelector(`[data-gs-id="${monitor.Monitor.Id}"]`) as HTMLElement;
+                if (element) {
+                  element.style.width = `${size}%`;
+                  element.style.minWidth = `${Math.max(size, 20)}%`;
                 }
               });
               
