@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription, interval } from 'rxjs';
 import { NvrService, Monitor } from '../../services/nvr.service';
+import { RestService } from '../../services/rest.service';
 import { addIcons } from 'ionicons';
 import { 
   refresh, videocam, videocamOff, camera, play, pause, move, grid,
@@ -70,6 +71,7 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
 
   constructor(
     private nvrService: NvrService,
+    private restService: RestService,
     private alertController: AlertController,
     private actionSheetController: ActionSheetController
   ) {
@@ -165,11 +167,11 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   private loadMonitors(forceRefresh = false) {
     this.isLoading = true;
     this.subscriptions.add(
-      this.nvrService.loadMonitors(forceRefresh).subscribe({
+      this.restService.getMonitors().subscribe({
         next: (monitors) => {
           this.monitors = monitors
-            .filter(m => m.Monitor.Function !== 'None')
-            .map(m => this.enhanceMonitor(m));
+            .filter((m: Monitor) => m.Monitor.Function !== 'None')
+            .map((m: Monitor) => this.enhanceMonitor(m));
           
           this.applyCurrentProfile();
           this.currentStreamState = this.streamState.SNAPSHOT;
@@ -615,7 +617,7 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     return Object.keys(this.nvrService.getMontageProfiles());
   }
 
-  generateStreamUrl(monitor: MontageMonitor): string {
+  async generateStreamUrl(monitor: MontageMonitor): Promise<string> {
     console.log(`=== MONTAGE DEBUG: Generating stream URL for monitor ${monitor.Monitor.Id} ===`);
     console.log('Current stream state:', this.currentStreamState);
     console.log('Stream state enum values:', this.streamState);
@@ -627,7 +629,6 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     }
     
     const loginData = this.nvrService.getLogin();
-    console.log('Login data for stream URL:', loginData);
     if (!loginData) {
       console.log('No login data available');
       return '';
@@ -648,21 +649,17 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
       console.log('Using default SNAPSHOT mode with scale:', scale);
     }
     
-    const streamingURL = monitor.Monitor.streamingURL || loginData.streamingurl;
-    const rand = new Date().getTime() + monitor.Monitor.Id;
-    
-    let stream = `${streamingURL}/nph-zms?mode=${mode}&monitor=${monitor.Monitor.Id}&scale=${scale}&rand=${rand}`;
-    
-    if (mode !== 'single' && monitor.Monitor.connKey) {
-      stream += `&connkey=${monitor.Monitor.connKey}`;
+    try {
+      const streamUrl = await this.restService.getMonitorStreamUrl(
+        parseInt(monitor.Monitor.Id), 
+        { mode, scale }
+      );
+      console.log('Generated stream URL:', streamUrl);
+      return streamUrl;
+    } catch (error) {
+      console.error('Error generating stream URL:', error);
+      return '';
     }
-    
-    if (loginData.authSession) {
-      stream += `&${loginData.authSession}`;
-    }
-    
-    console.log('Generated stream URL:', stream);
-    return stream;
   }
 
   switchToLiveStreaming() {
