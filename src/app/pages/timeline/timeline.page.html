@@ -2,16 +2,19 @@
   <ion-toolbar>
     <ion-buttons slot="start">
       <ion-menu-button></ion-menu-button>
-      <ion-button fill="clear" (click)="moveDays(-1)">
-        <ion-icon name="arrow-back"></ion-icon>
-      </ion-button>
-      <ion-button fill="clear" (click)="moveDays(1)">
-        <ion-icon name="arrow-forward"></ion-icon>
-      </ion-button>
     </ion-buttons>
     <ion-title>Timeline</ion-title>
     <ion-buttons slot="end">
-      <ion-button fill="clear" (click)="doRefresh()">
+      <ion-button fill="clear" (click)="zoomInTimeline()" title="Zoom In">
+        <ion-icon name="add"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" (click)="zoomOutTimeline()" title="Zoom Out">
+        <ion-icon name="remove"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" (click)="moveToNow()" title="Go to Now">
+        <ion-icon name="time"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" (click)="refreshTimeline()">
         <ion-icon name="refresh"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -19,39 +22,46 @@
 </ion-header>
 
 <ion-content>
-  <div class="timeline-info">
-    <p>{{ prettifyDate(fromDate) }} - {{ prettifyDate(toDate) }}</p>
-    <p><strong>Timeline Controls</strong></p>
+  <div class="timeline-controls">
+    <ion-item>
+      <ion-label>From:</ion-label>
+      <ion-datetime 
+        [(ngModel)]="fromDate" 
+        (ionChange)="onDateRangeChange()"
+        presentation="date-time"
+        size="cover">
+      </ion-datetime>
+    </ion-item>
+    
+    <ion-item>
+      <ion-label>To:</ion-label>
+      <ion-datetime 
+        [(ngModel)]="toDate" 
+        (ionChange)="onDateRangeChange()"
+        presentation="date-time"
+        size="cover">
+      </ion-datetime>
+    </ion-item>
   </div>
 
   <div *ngIf="isLoading" class="loading-container">
     <ion-spinner name="crescent"></ion-spinner>
-    <p>Working on timeline...</p>
+    <p>Loading timeline data...</p>
   </div>
 
-  <div class="timeline-container" #timelineContainer *ngIf="!isLoading">
-    <ion-card>
-      <ion-card-content>
-        <h3>Timeline View</h3>
-        <p>Timeline visualization will be implemented here using vis.js or similar library.</p>
-        <p>This will show chronological events from ZoneMinder in an interactive timeline format.</p>
-      </ion-card-content>
-    </ion-card>
-  </div>
-
-  <div class="timeline-controls">
-    <ion-button (click)="gotoNow()" color="success">
-      <ion-icon name="time" slot="start"></ion-icon>
-      Now
-    </ion-button>
-  </div>
+  <div #timelineContainer class="timeline-container" *ngIf="!isLoading"></div>
 </ion-content>
 
 <style>
-.timeline-info {
-  padding: 15px;
-  font-size: 10px;
-  color: grey;
+.timeline-controls {
+  padding: 16px;
+  background: var(--ion-color-light);
+}
+
+.timeline-container {
+  height: calc(100vh - 300px);
+  width: 100%;
+  min-height: 400px;
 }
 
 .loading-container {
@@ -62,14 +72,18 @@
   height: 50vh;
 }
 
-.timeline-container {
-  padding: 15px;
-  min-height: 400px;
+/* Timeline event styling */
+:global(.vis-item.normal-event) {
+  background-color: var(--ion-color-primary);
+  border-color: var(--ion-color-primary-shade);
 }
 
-.timeline-controls {
-  padding: 15px;
-  display: flex;
-  justify-content: center;
+:global(.vis-item.archived-event) {
+  background-color: var(--ion-color-secondary);
+  border-color: var(--ion-color-secondary-shade);
+}
+
+:global(.vis-timeline) {
+  border: 1px solid var(--ion-color-medium);
 }
 </style>

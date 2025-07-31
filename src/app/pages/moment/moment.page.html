@@ -4,21 +4,96 @@
       <ion-menu-button></ion-menu-button>
     </ion-buttons>
     <ion-title>24hr Review</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="loadMonitors()">
+        <ion-icon name="refresh"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
-  <ion-card>
-    <ion-card-content>
-      <h2>24 Hour Review</h2>
-      <p>This page will provide a comprehensive 24-hour footage review interface.</p>
-      <p>Features will include:</p>
-      <ul>
-        <li>Timeline scrubber for 24-hour periods</li>
-        <li>Quick navigation to events</li>
-        <li>Multi-monitor synchronized playback</li>
-        <li>Export and sharing capabilities</li>
-      </ul>
-    </ion-card-content>
-  </ion-card>
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading monitors...</p>
+  </div>
+
+  <div *ngIf="!isLoading">
+    <!-- Controls -->
+    <ion-card>
+      <ion-card-content>
+        <ion-item>
+          <ion-label>Monitor:</ion-label>
+          <ion-select [(ngModel)]="selectedMonitorId" (ionChange)="onMonitorChange()" placeholder="Select Monitor">
+            <ion-select-option *ngFor="let monitor of monitors" [value]="monitor.Monitor.Id">
+              {{ monitor.Monitor.Name }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item>
+          <ion-label>Date:</ion-label>
+          <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" />
+        </ion-item>
+
+        <ion-item>
+          <ion-label>Hour: {{ formatHour(currentHour) }}</ion-label>
+          <ion-range 
+            min="0" 
+            max="23" 
+            step="1" 
+            [(ngModel)]="currentHour"
+            (ionInput)="onHourChange($event)"
+            pin="true">
+          </ion-range>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Playback Controls -->
+    <ion-card>
+      <ion-card-content>
+        <div class="playback-controls">
+          <ion-button (click)="changeSpeed(0.5)" [fill]="playbackSpeed === 0.5 ? 'solid' : 'outline'">
+            0.5x
+          </ion-button>
+          <ion-button (click)="changeSpeed(1)" [fill]="playbackSpeed === 1 ? 'solid' : 'outline'">
+            1x
+          </ion-button>
+          <ion-button (click)="changeSpeed(2)" [fill]="playbackSpeed === 2 ? 'solid' : 'outline'">
+            2x
+          </ion-button>
+          <ion-button (click)="changeSpeed(4)" [fill]="playbackSpeed === 4 ? 'solid' : 'outline'">
+            4x
+          </ion-button>
+        </div>
+
+        <div class="main-controls">
+          <ion-button size="large" (click)="togglePlayback()">
+            <ion-icon [name]="isPlaying ? 'pause' : 'play'"></ion-icon>
+            {{ isPlaying ? 'Pause' : 'Play' }}
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Video Display -->
+    <ion-card *ngIf="selectedMonitorId">
+      <div class="video-container">
+        <img [src]="generateReviewUrl()" 
+             [alt]="getMonitorName(selectedMonitorId) + ' Review'"
+             class="review-video"
+             *ngIf="isPlaying">
+        <div *ngIf="!isPlaying" class="video-placeholder">
+          <ion-icon name="play" size="large"></ion-icon>
+          <p>Click Play to start 24hr review</p>
+        </div>
+      </div>
+    </ion-card>
+  </div>
+
+  <div *ngIf="!isLoading && monitors.length === 0" class="empty-state">
+    <p>No monitors available for review</p>
+    <ion-button (click)="loadMonitors()">Retry</ion-button>
+  </div>
 </ion-content>

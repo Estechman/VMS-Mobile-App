@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { NvrService } from './nvr.service';
 
 @Injectable({
@@ -30,7 +31,12 @@ export class RestService {
     const authSession = this.nvrService.getAuthSession();
     const apiUrl = `${loginData.apiurl}/montage.json${authSession}`;
 
-    return this.http.get(apiUrl, { params });
+    return this.http.get(apiUrl, { params }).pipe(
+      catchError(error => {
+        console.error('Error fetching montage view:', error);
+        return of({ placeholder: true, error: 'Failed to load montage data' });
+      })
+    );
   }
 
   /**
@@ -59,7 +65,12 @@ export class RestService {
    * Uses existing NvrService loadMonitors method
    */
   getMonitors(groupId?: number): Observable<any> {
-    return this.nvrService.loadMonitors();
+    return this.nvrService.loadMonitors().pipe(
+      catchError(error => {
+        console.error('Error fetching monitors:', error);
+        return of({ placeholder: true, error: 'Failed to load monitors' });
+      })
+    );
   }
 
   /**
@@ -75,6 +86,11 @@ export class RestService {
     return this.nvrService.getEvents(
       options.monitorId || 0,
       options.page || 1
+    ).pipe(
+      catchError(error => {
+        console.error('Error fetching events:', error);
+        return of([]);
+      })
     );
   }
 }

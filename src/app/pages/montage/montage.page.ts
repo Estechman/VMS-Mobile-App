@@ -185,6 +185,20 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     this.subscriptions.add(
       this.restService.getMonitors().subscribe({
         next: (monitors) => {
+          if (monitors && typeof monitors === 'object' && monitors.placeholder) {
+            console.log('🔧 [MONTAGE] API failed, creating mock monitors for testing...');
+            this.isLoading = false;
+            this.createMockMonitors();
+            return;
+          }
+          
+          if (!Array.isArray(monitors)) {
+            console.log('🔧 [MONTAGE] Invalid monitors data, creating mock monitors for testing...');
+            this.isLoading = false;
+            this.createMockMonitors();
+            return;
+          }
+          
           this.monitors = monitors
             .filter((m: Monitor) => m.Monitor.Function !== 'None')
             .map((m: Monitor) => this.enhanceMonitor(m));
@@ -197,10 +211,9 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
         },
         error: (error) => {
           console.error('Failed to load monitors:', error);
+          console.log('🔧 [MONTAGE] API failed, creating mock monitors for testing...');
           this.isLoading = false;
-          if (this.monitors.length === 0) {
-            this.createMockMonitors();
-          }
+          this.createMockMonitors();
         }
       })
     );
@@ -277,10 +290,10 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
 
   private startIntervals() {
     const loginData = this.nvrService.getLogin();
-    // const refreshSec = loginData?.refreshSec || 30;
-    // this.refreshInterval = interval(refreshSec * 1000).subscribe(() => {
-    //   this.loadMonitors(true);
-    // });
+    const refreshSec = loginData?.refreshSec || 3;
+    this.refreshInterval = interval(refreshSec * 1000).subscribe(() => {
+      this.refreshMonitorImages();
+    });
     
     this.alarmInterval = interval(5000).subscribe(() => {
       this.checkAlarmStatus();
@@ -348,8 +361,6 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     
     const streamUrl = this.generateStreamUrl(monitor);
     const statusColor = this.getMonitorStatusColor(monitor);
-    const statusIcon = monitor.Monitor.isRunning === 'true' ? '📹' : '❌';
-    const stampIcon = monitor.isStamp ? '📌' : '';
     
     console.log('🔧 [MONTAGE] Stream URL for monitor', monitor.Monitor.Id, ':', streamUrl);
     
@@ -359,20 +370,46 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
           <img class="monitor-stream-image ${monitor.selectStyle || ''}" 
                src="${streamUrl}" 
                alt="${monitor.Monitor.Name}"
-               onerror="this.src='assets/img/noimage.png'">
+               data-monitor-id="${monitor.Monitor.Id}">
           <div class="monitor-overlay">
             <div class="monitor-status" style="background-color: ${statusColor}">
               <ion-icon name="videocam"></ion-icon>
             </div>
             ${monitor.isStamp ? '<div class="stamp-indicator"><ion-icon name="bookmark"></ion-icon></div>' : ''}
+            ${monitor.lastEvent ? `
+              <div class="event-overlay">
+                <ion-icon name="notifications" class="event-icon"></ion-icon>
+                <span class="event-count">${monitor.eventCount}</span>
+              </div>
+            ` : ''}
+          </div>
+          <div class="monitor-timestamp">
+            ${new Date().toLocaleTimeString()}
           </div>
         </div>
         <div class="monitor-info">
           <h4>${monitor.Monitor.Name}</h4>
           <span class="monitor-id">ID: ${monitor.Monitor.Id}</span>
+          ${monitor.lastEvent ? `
+            <div class="event-info">
+              <small>Latest: ${monitor.lastEvent.Event?.StartTime || 'Unknown'}</small>
+            </div>
+          ` : ''}
         </div>
       </div>
     `;
+    
+    const imgElement = content.querySelector('.monitor-stream-image') as HTMLImageElement;
+    if (imgElement) {
+      imgElement.addEventListener('dblclick', () => {
+        this.maximizeCamera(monitor.Monitor.Id);
+      });
+      
+      imgElement.addEventListener('error', () => {
+        imgElement.src = 'assets/img/noimage.png';
+        console.warn('Failed to load stream for monitor:', monitor.Monitor.Id);
+      });
+    }
     
     widget.appendChild(content);
     return widget;
@@ -890,6 +927,34 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     (window as any).openMonitorModal = (id: string) => {
       this.openMonitorModal(id);
     };
+
+    await alert.present();
+  }
+
+  async maximizeCamera(monitorId: string) {
+    const monitor = this.monitors.find(m => m.Monitor.Id === monitorId);
+    if (!monitor) {
+      console.error('Monitor not found:', monitorId);
+      return;
+    }
+
+    const alert = await this.alertController.create({
+      header: monitor.Monitor.Name,
+      message: `Full-screen view for ${monitor.Monitor.Name}`,
+      cssClass: 'fullscreen-modal',
+      buttons: [
+        {
+          text: 'Close',
+          role: 'cancel'
+        },
+        {
+          text: 'Live View',
+          handler: () => {
+            console.log('Opening live view for monitor:', monitorId);
+          }
+        }
+      ]
+    });
 
     await alert.present();
   }

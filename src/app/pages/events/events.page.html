@@ -1,28 +1,154 @@
 <ion-header>
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/monitors"></ion-back-button>
+      <ion-menu-button></ion-menu-button>
     </ion-buttons>
-    <ion-title>Events - Monitor {{ monitorId }}</ion-title>
+    <ion-title>Events List</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="loadEvents(true)">
+        <ion-icon name="refresh"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
+  <!-- Filters -->
+  <div class="filters-container">
+    <ion-item>
+      <ion-label>Monitor:</ion-label>
+      <ion-select [(ngModel)]="selectedMonitorId" (ionChange)="onFilterChange()" placeholder="All Monitors">
+        <ion-select-option value="">All Monitors</ion-select-option>
+        <ion-select-option *ngFor="let monitor of monitors" [value]="monitor.Monitor.Id">
+          {{ monitor.Monitor.Name }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-item>
+      <ion-label>From:</ion-label>
+      <input type="date" [(ngModel)]="fromDate" (change)="onFilterChange()" />
+    </ion-item>
+
+    <ion-item>
+      <ion-label>To:</ion-label>
+      <input type="date" [(ngModel)]="toDate" (change)="onFilterChange()" />
+    </ion-item>
+  </div>
+
   <div *ngIf="isLoading" class="loading-container">
     <ion-spinner name="crescent"></ion-spinner>
     <p>Loading events...</p>
   </div>
 
+  <!-- Events List -->
   <ion-list *ngIf="!isLoading">
-    <div *ngIf="events.length === 0" class="empty-state">
-      <p>No events found for this monitor</p>
-    </div>
-    
-    <ion-item *ngFor="let event of events">
-      <ion-label>
-        <h2>{{ event.name }}</h2>
-        <p>{{ event.timestamp }}</p>
-      </ion-label>
-    </ion-item>
+    <ion-card *ngFor="let event of events" class="event-card">
+      <ion-card-header>
+        <ion-card-title>
+          <div class="event-header">
+            <span>Event {{ event.Event.Id }}</span>
+            <ion-badge [color]="getEventStatusColor(event)">
+              {{ event.Event.Archived === '1' ? 'Archived' : 'Active' }}
+            </ion-badge>
+          </div>
+        </ion-card-title>
+      </ion-card-header>
+      
+      <ion-card-content>
+        <div class="event-details">
+          <div class="event-info">
+            <p><strong>Monitor:</strong> {{ getMonitorName(event.Event.MonitorId) }}</p>
+            <p><strong>Start:</strong> {{ formatEventTime(event.Event.StartTime) }}</p>
+            <p><strong>Duration:</strong> {{ getEventDuration(event.Event.StartTime, event.Event.EndTime) }}</p>
+            <p><strong>Frames:</strong> {{ event.Event.Frames }} ({{ event.Event.AlarmFrames }} alarm)</p>
+            <p *ngIf="event.Event.Cause"><strong>Cause:</strong> {{ event.Event.Cause }}</p>
+          </div>
+          
+          <div class="event-actions">
+            <ion-button size="small" fill="outline" (click)="viewEvent(event)">
+              <ion-icon name="videocam"></ion-icon>
+              View
+            </ion-button>
+            <ion-button size="small" fill="outline" (click)="archiveEvent(event)" *ngIf="event.Event.Archived !== '1'">
+              <ion-icon name="archive"></ion-icon>
+              Archive
+            </ion-button>
+            <ion-button size="small" fill="outline" (click)="downloadEvent(event)">
+              <ion-icon name="download"></ion-icon>
+              Download
+            </ion-button>
+            <ion-button size="small" fill="outline" color="danger" (click)="deleteEvent(event)">
+              <ion-icon name="trash"></ion-icon>
+              Delete
+            </ion-button>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
   </ion-list>
+
+  <ion-infinite-scroll (ionInfinite)="onInfiniteScroll($event)" *ngIf="!isLoading && currentPage < maxPages">
+    <ion-infinite-scroll-content loadingSpinner="bubbles" loadingText="Loading more events...">
+    </ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+
+  <div *ngIf="!isLoading && events.length === 0" class="empty-state">
+    <p>No events found for the selected criteria</p>
+    <ion-button (click)="loadEvents(true)">Retry</ion-button>
+  </div>
 </ion-content>
+
+<style>
+.filters-container {
+  background: var(--ion-color-light);
+  padding: 8px;
+}
+
+.filters-container ion-item {
+  --background: transparent;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+}
+
+.event-card {
+  margin: 8px;
+}
+
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.event-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.event-info {
+  flex: 1;
+}
+
+.event-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+  text-align: center;
+}
+</style>

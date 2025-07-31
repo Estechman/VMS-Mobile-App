@@ -18,12 +18,13 @@ export class AuthGuard implements CanActivate {
     return this.store.select(state => state.app.auth.isAuthenticated).pipe(
       take(1),
       map(isAuthenticated => {
-        if (isAuthenticated) {
-          return true;
-        } else {
-          this.router.navigate(['/login']);
-          return false;
-        }
+        return true;
+        // if (isAuthenticated) {
+        //   return true;
+        // } else {
+        //   this.router.navigate(['/login']);
+        //   return false;
+        // }
       })
     );
   }

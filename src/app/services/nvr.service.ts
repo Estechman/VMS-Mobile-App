@@ -28,17 +28,21 @@ export interface LoginData {
   enableAlarmCount?: boolean;
   minAlarmCount?: number;
   objectDetectionFilter?: boolean;
-  refreshSec?: number;
   montageQuality?: number;
   montageliveFPS?: number;
   packeryPositions?: string;
   maxMontage?: number;
   currentZMGroupName?: string;
+  currentZMGroupNames?: string[];
   showMontageSubMenu?: boolean;
   packeryPositionsArray?: { [key: string]: string };
   currentMontageProfile?: string;
   cycleMontageProfiles?: boolean;
   cycleMontageInterval?: number;
+  refreshSec?: number;
+  enableMontageOverlays?: boolean;
+  montageHideFooter?: boolean;
+  runMode?: string;
 }
 
 export interface Monitor {
@@ -63,6 +67,7 @@ export interface Monitor {
     showSidebar?: boolean;
     regenHandle?: any;
     char?: string;
+    Group?: string[];
   };
   Monitor_Status?: {
     MonitorId: string | null;
@@ -884,5 +889,51 @@ export class NvrService {
     loginData.cycleMontageProfiles = !loginData.cycleMontageProfiles;
     this.setLogin(loginData);
     console.log('🔧 [NVR] Montage profile cycling:', loginData.cycleMontageProfiles ? 'enabled' : 'disabled');
+  }
+
+  private zmGroups: string[] = [];
+
+  getZMGroups(): Observable<string[]> {
+    const loginData = this.getLogin();
+    if (!loginData) {
+      return of([]);
+    }
+
+    const apiUrl = `${loginData.apiurl}/groups.json${this.getAuthSession()}`;
+    
+    return this.http.get<any>(apiUrl).pipe(
+      map(response => {
+        if (response && response.groups) {
+          this.zmGroups = response.groups.map((g: any) => g.Group.Name);
+          this.updateMonitorGroups(response.groups);
+          return this.zmGroups;
+        }
+        return [];
+      }),
+      catchError(error => {
+        console.error('Error fetching ZM Groups:', error);
+        return of([]);
+      })
+    );
+  }
+
+  listOfZMGroups(): string[] {
+    return this.zmGroups;
+  }
+
+  private updateMonitorGroups(groups: any[]) {
+    const currentMonitors = this.monitors.value;
+    groups.forEach(group => {
+      if (group.Monitor) {
+        group.Monitor.forEach((monitorAssoc: any) => {
+          const monitor = currentMonitors.find(m => m.Monitor.Id === monitorAssoc.MonitorId);
+          if (monitor) {
+            if (!monitor.Monitor.Group) monitor.Monitor.Group = [];
+            monitor.Monitor.Group.push(group.Group.Name);
+          }
+        });
+      }
+    });
+    this.monitors.next(currentMonitors);
   }
 }
