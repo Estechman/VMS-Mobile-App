@@ -52,6 +52,32 @@ angular.module('zmApp.controllers')
     const FORCE_STREAMING = true; // Override multi-port check
     const STREAM_MODE = 'jpeg'; // Fallback to 'mpeg' if this fails
 
+    const MontageStream = {
+      MAX_RETRIES: 3,
+      RETRY_DELAY: 5000,
+      STREAM_MODES: ['jpeg', 'mpeg', 'single'],
+      
+      getStreamUrl: function(monitorId, modeIndex = 0) {
+        const baseUrl = 'http://demo.zoneminder.com/cgi-bin/nph-zms';
+        const mode = this.STREAM_MODES[modeIndex] || 'single';
+        return `${baseUrl}?mode=${mode}&monitor=${monitorId}&rand=${Date.now()}`;
+      },
+      
+      loadStream: function(monitorId, element, attempt = 0) {
+        element.src = this.getStreamUrl(monitorId, attempt);
+        
+        element.onerror = () => {
+          if (attempt < this.MAX_RETRIES) {
+            setTimeout(() => {
+              this.loadStream(monitorId, element, attempt + 1);
+            }, this.RETRY_DELAY);
+          } else {
+            element.src = this.getStreamUrl(monitorId, this.STREAM_MODES.length - 1);
+          }
+        };
+      }
+    };
+
     var simulStreaming = false; // will be true if you multiport
 
     var broadcastHandles = [];
@@ -2332,20 +2358,8 @@ function initCameraStream(cameraId) {
 function loadStreamWithFallback(cameraId, streamUrl) {
   var imgElement = document.getElementById('img-' + getMonitorIndex(cameraId));
   if (imgElement) {
-    var fallbackUrl = streamUrl.replace('mode=' + STREAM_MODE, 'mode=single');
-    
-    imgElement.onerror = function() {
-      if (imgElement.src !== fallbackUrl) {
-        console.warn('Stream failed, falling back to snapshot for ' + cameraId);
-        imgElement.src = fallbackUrl;
-      } else {
-        console.error('Both stream and snapshot failed for ' + cameraId);
-        showFallbackImage(cameraId);
-      }
-    };
-    
-    imgElement.src = streamUrl;
-    console.log('Video element setup for camera: ' + cameraId);
+    console.log('Loading stream with progressive fallback for camera: ' + cameraId);
+    MontageStream.loadStream(cameraId, imgElement);
   }
 }
 
