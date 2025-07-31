@@ -196,6 +196,20 @@ angular.module('zmApp.controllers')
        });*/
     }
 
+function calculateGridSize(cameraCount) {
+  const aspectRatio = window.innerWidth / window.innerHeight;
+  
+  if (cameraCount <= 4) return { cols: 2, rows: 2 };
+  if (cameraCount <= 9) return { cols: 3, rows: 3 };
+  
+  const cols = Math.ceil(Math.sqrt(cameraCount * aspectRatio));
+  return {
+    cols: cols,
+    rows: Math.ceil(cameraCount / cols)
+  };
+}
+
+
     // called by afterEnter to load Packery
     function initPackery() {
       /* for (var x=0; x < $scope.MontageMonitors.length; x++) {
@@ -2612,7 +2626,16 @@ $scope.resetSizesWithInput = function () {
 
 $scope.resetSizes = function (unhideAll, percent) {
   var somethingReset = false;
-  if (!percent) percent="50";
+  
+  if (!percent) {
+    var visibleMonitors = $scope.MontageMonitors.filter(function(monitor) {
+      return monitor.Monitor.listDisplay !== 'hide';
+    });
+    var gridSize = calculateGridSize(visibleMonitors.length);
+    percent = Math.max(20, Math.min(90, (100 / gridSize.cols) - 5)).toFixed(1);
+    NVR.debug("Auto-calculated grid size: " + gridSize.cols + "x" + gridSize.rows + ", using " + percent + "% scale");
+  }
+  
   for (var i = 0; i < $scope.MontageMonitors.length; i++) {
     if (unhideAll) {
       NVR.debug('Setting '+$scope.MontageMonitors[i].Monitor.Name+' to show');
@@ -2685,7 +2708,21 @@ function formatBytes(bytes, decimals) {
 }
 
 $scope.squeezeMonitors = function () {
-  NVR.debug ("squeezing");
+  NVR.debug("squeezing with dynamic grid calculation");
+  
+  var visibleMonitors = $scope.MontageMonitors.filter(function(monitor) {
+    return monitor.Monitor.listDisplay !== 'hide';
+  });
+  var gridSize = calculateGridSize(visibleMonitors.length);
+  var optimalPercent = Math.max(15, Math.min(85, (100 / gridSize.cols) - 3)).toFixed(1);
+  
+  // Apply calculated size to visible monitors
+  for (var i = 0; i < $scope.MontageMonitors.length; i++) {
+    if ($scope.MontageMonitors[i].Monitor.listDisplay !== 'hide') {
+      $scope.MontageMonitors[i].Monitor.gridScale = optimalPercent;
+    }
+  }
+  
   pckry.once('layoutComplete', resizeComplete);
   $timeout(function () {
     pckry.layout();
