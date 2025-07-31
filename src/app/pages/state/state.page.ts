@@ -8,7 +8,6 @@ import { HttpClient } from '@angular/common/http';
 import { NvrService } from '../../services/nvr.service';
 import { addIcons } from 'ionicons';
 import { home, trendingUp, refresh, server, desktop, add, remove } from 'ionicons/icons';
-import { environment } from '../../../environments/environment';
 
 interface SystemStatus {
   zmRun: string;
@@ -71,7 +70,7 @@ export class StatePage implements OnInit {
     const loginData = this.nvrService.getLogin();
     if (!loginData) return;
 
-    const apiUrl = `${environment.apiUrl}/host/daemonCheck.json`;
+    const apiUrl = `${loginData.apiurl}/host/daemonCheck.json`;
     
     this.http.get<any>(apiUrl).subscribe({
       next: (response) => {
@@ -100,7 +99,7 @@ export class StatePage implements OnInit {
     const loginData = this.nvrService.getLogin();
     if (!loginData) return;
 
-    const apiUrl = `${environment.apiUrl}/host/getLoad.json`;
+    const apiUrl = `${loginData.apiurl}/host/getLoad.json`;
     
     this.http.get<any>(apiUrl).subscribe({
       next: (response) => {
@@ -116,7 +115,7 @@ export class StatePage implements OnInit {
     const loginData = this.nvrService.getLogin();
     if (!loginData) return;
 
-    const apiUrl = `${environment.apiUrl}/storage.json`;
+    const apiUrl = `${loginData.apiurl}/storage.json`;
     
     this.http.get<any>(apiUrl).subscribe({
       next: (response) => {
@@ -132,7 +131,7 @@ export class StatePage implements OnInit {
     const loginData = this.nvrService.getLogin();
     if (!loginData) return;
 
-    const apiUrl = `${environment.apiUrl}/servers.json`;
+    const apiUrl = `${loginData.apiurl}/servers.json`;
     
     this.http.get<any>(apiUrl).subscribe({
       next: (response) => {

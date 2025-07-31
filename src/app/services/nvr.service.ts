@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError, of, forkJoin } from 'rxjs';
 import { catchError, map, tap, switchMap } from 'rxjs/operators';
-import { environment } from '../../environments/environment';
 
 export interface LoginData {
   serverName: string;
@@ -98,7 +97,6 @@ export interface Event {
   providedIn: 'root'
 })
 export class NvrService {
-  private apiUrl = environment.apiUrl;
   private loginData = new BehaviorSubject<LoginData | null>(null);
   private monitors = new BehaviorSubject<Monitor[]>([]);
   private events = new BehaviorSubject<Event[]>([]);
@@ -107,6 +105,19 @@ export class NvrService {
 
   constructor(private http: HttpClient) {
     this.loadSavedLogin();
+  }
+
+  private isElectron(): boolean {
+    return !!(window && (window as any).require);
+  }
+
+  private buildApiUrl(relativePath: string): string {
+    const loginData = this.getLogin();
+    if (!loginData) {
+      throw new Error('No login data configured');
+    }
+    
+    return this.isElectron() ? `${loginData.apiurl}${relativePath}` : relativePath;
   }
 
   getLogin(): LoginData | null {
@@ -171,7 +182,7 @@ export class NvrService {
     }
 
     console.log('🔧 [NVR] Auth is enabled, performing API login');
-    const apiUrl = `${this.apiUrl}/host/login.json`;
+    const apiUrl = this.buildApiUrl('/host/login.json');
     const credentials = {
       user: username,
       pass: password
@@ -224,7 +235,7 @@ export class NvrService {
     }
 
     const authSession = this.authSession.value;
-    const apiUrl = `${this.apiUrl}/host/getVersion.json${authSession}`;
+    const apiUrl = this.buildApiUrl(`/host/getVersion.json${authSession}`);
     
     console.log('🔧 [NVR] Making API validation call to:', apiUrl);
     console.log('🔧 [NVR] With auth session:', authSession);
@@ -277,7 +288,7 @@ export class NvrService {
     }
 
     const authSession = this.authSession.value;
-    const apiUrl = `${this.apiUrl}/monitors.json${authSession}`;
+    const apiUrl = this.buildApiUrl(`/monitors.json${authSession}`);
     
     console.log('🔧 [NVR] Making monitors API call to:', apiUrl);
     console.log('🔧 [NVR] With auth session:', authSession);
@@ -327,7 +338,7 @@ export class NvrService {
       return throwError('No login data');
     }
 
-    const apiUrl = `${this.apiUrl}/host/logout.json${this.authSession.value}`;
+    const apiUrl = this.buildApiUrl(`/host/logout.json${this.authSession.value}`);
     return this.http.post(apiUrl, {}).pipe(
       tap(() => {
         this.authSession.next('');
@@ -344,7 +355,7 @@ export class NvrService {
       return throwError('No login data configured');
     }
 
-    let apiUrl = `${this.apiUrl}/events.json${this.authSession.value}`;
+    let apiUrl = this.buildApiUrl(`/events.json${this.authSession.value}`);
     
     const params: string[] = [];
     if (monitorId) params.push(`MonitorId=${monitorId}`);
@@ -371,7 +382,7 @@ export class NvrService {
       return throwError('No login data configured');
     }
 
-    const apiUrl = `${this.apiUrl}/events/${eventId}.json${this.authSession.value}`;
+    const apiUrl = this.buildApiUrl(`/events/${eventId}.json${this.authSession.value}`);
     const data = { 'Event[Archived]': archived ? '1' : '0' };
 
     return this.http.post(apiUrl, data).pipe(
@@ -393,7 +404,7 @@ export class NvrService {
       return throwError('No login data configured');
     }
 
-    const apiUrl = `${this.apiUrl}/events/${eventId}.json${this.authSession.value}`;
+    const apiUrl = this.buildApiUrl(`/events/${eventId}.json${this.authSession.value}`);
 
     return this.http.delete(apiUrl).pipe(
       tap(() => {
@@ -728,8 +739,9 @@ export class NvrService {
     myurl += `.json?sort=StartTime&direction=desc&page=${pageId}`;
     
     const authSession = this.authSession.value;
-    console.log('🔧 [NVR] getEvents URL:', `${myurl}${authSession}`);
-    return this.http.get<any>(`${myurl}${authSession}`);
+    const fullUrl = this.buildApiUrl(`${myurl}${authSession}`);
+    console.log('🔧 [NVR] getEvents URL:', fullUrl);
+    return this.http.get<any>(fullUrl);
   }
 
   getEventsPages(monitorId: number = 0, startTime: string = '', endTime: string = '', noObjectFilter: boolean = false): Observable<any> {
@@ -749,8 +761,9 @@ export class NvrService {
     myurl += `.json?sort=StartTime&direction=desc&page=1&limit=1`;
     
     const authSession = this.authSession.value;
-    console.log('🔧 [NVR] getEventsPages URL:', `${myurl}${authSession}`);
-    return this.http.get<any>(`${myurl}${authSession}`);
+    const fullUrl = this.buildApiUrl(`${myurl}${authSession}`);
+    console.log('🔧 [NVR] getEventsPages URL:', fullUrl);
+    return this.http.get<any>(fullUrl);
   }
 
   generateStreamUrlSync(monitorId: string | number, mode: string = 'single', scale: number = 100): string {
@@ -781,7 +794,7 @@ export class NvrService {
     if (!loginData) return throwError(() => new Error('Not logged in'));
 
     const authSession = this.authSession.value;
-    const apiUrl = `/api/host/daemonCheck.json${authSession}`;
+    const apiUrl = this.buildApiUrl(`/api/host/daemonCheck.json${authSession}`);
     return this.http.get<any>(apiUrl);
   }
 
@@ -790,7 +803,7 @@ export class NvrService {
     if (!loginData) return throwError(() => new Error('Not logged in'));
 
     const authSession = this.authSession.value;
-    const apiUrl = `/api/host/getLoad.json${authSession}`;
+    const apiUrl = this.buildApiUrl(`/api/host/getLoad.json${authSession}`);
     return this.http.get<any>(apiUrl);
   }
 
@@ -799,7 +812,7 @@ export class NvrService {
     if (!loginData) return throwError(() => new Error('Not logged in'));
 
     const authSession = this.authSession.value;
-    const apiUrl = `/api/storage.json${authSession}`;
+    const apiUrl = this.buildApiUrl(`/api/storage.json${authSession}`);
     return this.http.get<any>(apiUrl);
   }
 
@@ -808,7 +821,7 @@ export class NvrService {
     if (!loginData) return throwError(() => new Error('Not logged in'));
 
     const authSession = this.authSession.value;
-    const apiUrl = `/api/servers.json${authSession}`;
+    const apiUrl = this.buildApiUrl(`/api/servers.json${authSession}`);
     return this.http.get<any>(apiUrl);
   }
 
