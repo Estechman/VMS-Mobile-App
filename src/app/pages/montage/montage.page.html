@@ -69,10 +69,11 @@
     <p>Arranging monitors...</p>
   </div>
 
-  <!-- CSS Grid Container for Clean Layout -->
+  <!-- CSS Grid Container for Clean Layout with Virtual Scrolling -->
   <div class="montage-grid" [style.display]="isLoading ? 'none' : 'grid'" *ngIf="!isDragMode">
-    <div *ngFor="let monitor of monitors" class="monitor-card" 
+    <div *ngFor="let monitor of monitors; trackBy: trackByMonitorId" class="monitor-card" 
          [style.display]="monitor.listDisplay === 'show' ? 'block' : 'none'"
+         [class.placeholder-slot]="monitor.hasPlaceholder"
          (dblclick)="maximizeCamera(monitor.Monitor.Id)">
       <div class="monitor-stream-container" [class.alarmed]="monitor.isAlarmed">
         <img class="monitor-stream-image" 

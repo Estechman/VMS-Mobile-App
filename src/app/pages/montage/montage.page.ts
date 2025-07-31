@@ -258,9 +258,9 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     console.log('Current stream state before mock creation:', this.currentStreamState);
     
     const mockMonitors: any[] = [];
-    const columnsPerRow = 3; // Standard grid layout
+    const columnsPerRow = 4; // Updated for better performance testing
     
-    for (let i = 1; i <= 12; i++) {
+    for (let i = 1; i <= 20; i++) {
       mockMonitors.push({
         Monitor: {
           Id: i.toString(),
@@ -269,20 +269,21 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
           Enabled: '1',
           Width: '640',
           Height: '480',
-          isRunning: i % 3 !== 0 ? 'true' : 'false' // Most monitors running
+          isRunning: i % 4 !== 0 ? 'true' : 'false' // Most monitors running
         },
         gridScale: 50,
         listDisplay: 'show' as 'show' | 'noshow' | 'blank',
-        isAlarmed: i % 4 === 0, // Every 4th monitor is "alarmed"
+        isAlarmed: i % 5 === 0, // Every 5th monitor is "alarmed"
         isStamp: false,
         selectStyle: '',
         showSidebar: false,
-        eventCount: 0,
+        eventCount: Math.floor(Math.random() * 10),
         gridPosition: {
           row: Math.floor((i - 1) / columnsPerRow),
           col: (i - 1) % columnsPerRow
         },
-        version: `1.0.${i}`
+        version: `1.0.${i}`,
+        hasPlaceholder: i % 7 === 0 // Every 7th monitor shows placeholder
       });
     }
     this.monitors = mockMonitors as any;
@@ -855,10 +856,6 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     this.saveCurrentLayout();
   }
 
-  trackByMonitorId(index: number, monitor: MontageMonitor): string {
-    return monitor.Monitor.Id;
-  }
-
   async selectZMGroup() {
     this.tempZMGroups = [];
     const loginData = this.nvrService.getLogin();
@@ -1013,14 +1010,21 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   getMonitorImageUrl(monitor: MontageMonitor): string {
+    if ((monitor as any).hasPlaceholder) {
+      return 'assets/img/placeholder.png';
+    }
     return `https://demo.zoneminder.com/zm/cgi-bin/nph-zms?mode=jpeg&monitor=${monitor.Monitor.Id}&scale=50&maxfps=5&buffer=1000&t=${Date.now()}`;
   }
 
   onImageError(event: any) {
-    event.target.src = 'assets/img/noimage.png';
+    event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDI0MCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyNDAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xMjAgOTBMMTAwIDcwSDE0MEwxMjAgOTBaIiBmaWxsPSIjQ0NDIi8+CjxjaXJjbGUgY3g9IjEyMCIgY3k9IjkwIiByPSI0IiBmaWxsPSIjOTk5Ii8+Cjx0ZXh0IHg9IjEyMCIgeT0iMTIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNjY2IiBmb250LXNpemU9IjEyIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+';
   }
 
   getCurrentTime(): string {
     return new Date().toLocaleTimeString();
+  }
+
+  trackByMonitorId(index: number, monitor: MontageMonitor): string {
+    return monitor.Monitor.Id;
   }
 }
