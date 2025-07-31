@@ -299,6 +299,10 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
       this.checkAlarmStatus();
     });
     
+    interval(1000).subscribe(() => {
+      this.updateTimestamps();
+    });
+    
     if (this.nvrService.isMontageProfileCycling()) {
       this.startProfileCycling();
     }
@@ -985,5 +989,14 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
         imgElement.src = url + '&t=' + Date.now();
       });
     }
+  }
+
+  private updateTimestamps() {
+    const timestampElements = document.querySelectorAll('.monitor-timestamp');
+    const currentTime = new Date().toLocaleTimeString();
+    
+    timestampElements.forEach(element => {
+      element.textContent = currentTime;
+    });
   }
 }

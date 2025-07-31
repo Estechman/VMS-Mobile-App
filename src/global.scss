@@ -83,6 +83,8 @@
   min-height: 400px;
   padding: 10px;
   width: 100%;
+  overflow-y: auto;
+  max-height: 80vh;
 }
 
 .grid-stack-item {
