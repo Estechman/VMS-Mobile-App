@@ -1993,6 +1993,13 @@ function calculateGridSize(cameraCount) {
         NVR.debug('listDisplay is blank for monitor ' + monitor.Monitor.Id);
         return;
       }
+      
+      if (typeof initCameraStream === 'function') {
+        NVR.debug('Attempting stream validation for monitor: ' + monitor.Monitor.Id);
+        initCameraStream(monitor.Monitor.Id);
+        return;
+      }
+      
       var mintimesec = 10;
       var nowt = moment();
       var thent = monitor.Monitor.regenTime || moment();
@@ -2283,6 +2290,68 @@ $scope.constructStream = function(monitor) {
 
 function appendConnKey(ck) {
   return "&connkey=" + ck;
+}
+
+function initCameraStream(cameraId) {
+  var monitor = $scope.MontageMonitors.find(function(m) { 
+    return m.Monitor.Id == cameraId; 
+  });
+  if (!monitor) return;
+  
+  var streamUrl = $scope.constructStream(monitor);
+  if (!streamUrl) return;
+  
+  var token = $rootScope.authSession.replace(/[?&]auth=([^&]+)/, '$1');
+  var headers = {};
+  if (token && token !== $rootScope.authSession) {
+    headers['Authorization'] = 'Bearer ' + token;
+  }
+  
+  fetch(streamUrl, { 
+    method: 'HEAD',
+    headers: headers
+  })
+  .then(function(response) {
+    if (!response.ok) throw new Error('Stream inaccessible');
+    NVR.debug('Stream verified: ' + streamUrl);
+    setupVideoElement(cameraId, streamUrl);
+  })
+  .catch(function(error) {
+    NVR.debug('Stream error: ' + error.message);
+    showFallbackImage(cameraId);
+  });
+}
+
+function setupVideoElement(cameraId, streamUrl) {
+  var imgElement = document.getElementById('img-' + getMonitorIndex(cameraId));
+  if (imgElement) {
+    imgElement.src = streamUrl;
+    NVR.debug('Video element setup for camera: ' + cameraId);
+  }
+}
+
+function getMonitorIndex(cameraId) {
+  for (var i = 0; i < $scope.MontageMonitors.length; i++) {
+    if ($scope.MontageMonitors[i].Monitor.Id == cameraId) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function showFallbackImage(cameraId) {
+  var imgElement = document.getElementById('img-' + getMonitorIndex(cameraId));
+  if (imgElement) {
+    imgElement.src = 'img/noimage.png';
+    imgElement.setAttribute('data-src', 'holder.js/320x240?auto=yes&theme=industrial&text=Stream Unavailable');
+    if (typeof Holder !== 'undefined') {
+      Holder.run({
+        images: imgElement,
+        nocss: false
+      });
+    }
+    NVR.debug('Fallback image shown for camera: ' + cameraId);
+  }
 }
 
 $scope.toggleSubMenuFunction = function () {

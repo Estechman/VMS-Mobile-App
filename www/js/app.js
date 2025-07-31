@@ -616,7 +616,11 @@ angular.module('zmApp', [
               if (ld.isUseAuth && ($rootScope.authSession=='')) {
                 NVR.log("waiting for authSession to have a value...");
               } else if ($attributes.imageSpinnerSrc) {
-                $element[0].src = $attributes.imageSpinnerSrc; // set src 
+                if (typeof initCameraStream === 'function' && $attributes.cameraId) {
+                  initCameraStream($attributes.cameraId);
+                } else {
+                  $element[0].src = $attributes.imageSpinnerSrc; // set src 
+                }
               } else {
                 NVR.log("No imageSpinnerSrc!");
               }

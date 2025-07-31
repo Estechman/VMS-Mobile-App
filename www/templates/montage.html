@@ -146,6 +146,7 @@
 
                   <img class="{{monitor.Monitor.selectStyle}}" id="img-{{$index}}"
                     image-spinner-src="{{constructStream(monitor)}}"
+                    camera-id="{{monitor.Monitor.Id}}"
                     ng-click="!isDragabillyOn?openModal(monitor.Monitor.Id, monitor.Monitor.Controllable, monitor.Monitor.ControlId, monitor.Monitor.connKey,monitor):toggleSelectItem(monitor.Monitor.Id);"
                     image-spinner-loader="lines"
                     img-spinner-w="{{monitor.Monitor.Width}}"
