@@ -52,10 +52,21 @@ angular.module('zmApp.controllers')
     const FORCE_STREAMING = true; // Override multi-port check
     const STREAM_MODE = 'jpeg'; // Fallback to 'mpeg' if this fails
 
+    function createThrottler(delayMs) {
+      let lastRun = 0;
+      return function(callback) {
+        const now = Date.now();
+        if (now - lastRun >= delayMs) {
+          callback();
+          lastRun = now;
+        }
+      };
+    }
+
     const MontageStream = {
-      MAX_RETRIES: 3,
-      RETRY_DELAY: 5000,
-      STREAM_MODES: ['jpeg', 'mpeg', 'single'],
+      MAX_RETRIES: window.zmMontageConfig ? window.zmMontageConfig.MAX_RETRIES : 3,
+      RETRY_DELAY: window.zmMontageConfig ? window.zmMontageConfig.RETRY_DELAY : 5000,
+      STREAM_MODES: window.zmMontageConfig ? window.zmMontageConfig.STREAM_MODES : ['jpeg', 'mpeg', 'single'],
       
       getStreamUrl: function(monitorId, modeIndex = 0) {
         const baseUrl = 'http://demo.zoneminder.com/cgi-bin/nph-zms';
@@ -79,6 +90,33 @@ angular.module('zmApp.controllers')
     };
 
     var simulStreaming = false; // will be true if you multiport
+
+    const handlers = {
+      resize: null
+    };
+    
+    const throttleResize = createThrottler(window.zmMontageConfig ? window.zmMontageConfig.RESIZE_THROTTLE_MS : 200);
+    
+    handlers.resize = function() {
+      throttleResize(function() {
+        if (typeof updateGridLayout === 'function') {
+          updateGridLayout();
+        }
+        if (pckry && typeof pckry.layout === 'function') {
+          pckry.layout();
+        }
+      });
+    };
+    
+    window.addEventListener('resize', handlers.resize);
+    
+    $scope.$on('$destroy', function() {
+      if (handlers.resize) {
+        window.removeEventListener('resize', handlers.resize);
+      }
+      handlers.resize = null;
+      NVR.debug('MontageCtrl: Event handlers cleaned up');
+    });
 
     var broadcastHandles = [];
     $scope.$on('monitors-hard-reload', function () {

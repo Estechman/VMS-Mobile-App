@@ -2,6 +2,19 @@
 /* jslint browser: true*/
 /* global cordova,StatusBar,angular,console,alert,PushNotification, moment ,ionic, URI,Packery, ConnectSDK, CryptoJS, ContactFindOptions, localforage,$, Connection, MobileAccessibility, hello */
 
+if (typeof Promise === 'undefined') {
+  document.write('<script src="lib/es6-promise/auto.min.js"><\/script>');
+  console.warn('Loaded Promise polyfill');
+}
+
+if (!window.zmMontageConfig) {
+  console.error('Montage config missing! Loading defaults');
+  window.zmMontageConfig = {
+    STREAM_MODES: ['single'], // Most compatible fallback
+    MAX_RETRIES: 1
+  };
+}
+
 console.debug('Streaming Configuration:', {
   forceStreaming: true,
   streamMode: 'jpeg',
