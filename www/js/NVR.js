@@ -1924,6 +1924,10 @@ angular.module('zmApp.controllers')
           return loginData.disableSimulStreaming;
         },
 
+        isStreamingEnabled: function() {
+          return true; // Force-enable streaming regardless of multi-port config
+        },
+
         getCurrentServerVersion: function () {
           return (loginData.currentServerVersion);
         },

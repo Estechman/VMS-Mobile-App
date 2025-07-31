@@ -49,6 +49,9 @@ angular.module('zmApp.controllers')
 
     //var reloadPage = 30;
 
+    const FORCE_STREAMING = true; // Override multi-port check
+    const STREAM_MODE = 'jpeg'; // Fallback to 'mpeg' if this fails
+
     var simulStreaming = false; // will be true if you multiport
 
     var broadcastHandles = [];
@@ -1979,7 +1982,7 @@ function calculateGridSize(cameraCount) {
     };
 
     function getMode() {
-      var mode = (simulStreaming && (currentStreamState != streamState.SNAPSHOT) && (currentStreamState != streamState.STOPPED)) ? 'jpeg' : 'single';
+      var mode = (FORCE_STREAMING || (simulStreaming && (currentStreamState != streamState.SNAPSHOT) && (currentStreamState != streamState.STOPPED))) ? STREAM_MODE : 'single';
       //console.log("mode="+mode + " due to simulStreaming:"+simulStreaming+" currentStreamState==SNAPSHOT?"+((currentStreamState != streamState.SNAPSHOT)+ " or Stopped?"+(currentStreamState != streamState.STOPPED)));
       return mode;
     }
@@ -2301,6 +2304,8 @@ function initCameraStream(cameraId) {
   var streamUrl = $scope.constructStream(monitor);
   if (!streamUrl) return;
   
+  console.log('Loading stream for monitor ' + cameraId, streamUrl);
+  
   var token = $rootScope.authSession.replace(/[?&]auth=([^&]+)/, '$1');
   var headers = {};
   if (token && token !== $rootScope.authSession) {
@@ -2313,20 +2318,34 @@ function initCameraStream(cameraId) {
   })
   .then(function(response) {
     if (!response.ok) throw new Error('Stream inaccessible');
-    NVR.debug('Stream verified: ' + streamUrl);
-    setupVideoElement(cameraId, streamUrl);
+    console.log('Stream verified:', streamUrl);
+    loadStreamWithFallback(cameraId, streamUrl);
   })
   .catch(function(error) {
-    NVR.debug('Stream error: ' + error.message);
-    showFallbackImage(cameraId);
+    console.error('Stream error:', error);
+    var fallbackUrl = streamUrl.replace('mode=' + STREAM_MODE, 'mode=single');
+    console.warn('Stream failed, falling back to snapshot for ' + cameraId);
+    loadStreamWithFallback(cameraId, fallbackUrl);
   });
 }
 
-function setupVideoElement(cameraId, streamUrl) {
+function loadStreamWithFallback(cameraId, streamUrl) {
   var imgElement = document.getElementById('img-' + getMonitorIndex(cameraId));
   if (imgElement) {
+    var fallbackUrl = streamUrl.replace('mode=' + STREAM_MODE, 'mode=single');
+    
+    imgElement.onerror = function() {
+      if (imgElement.src !== fallbackUrl) {
+        console.warn('Stream failed, falling back to snapshot for ' + cameraId);
+        imgElement.src = fallbackUrl;
+      } else {
+        console.error('Both stream and snapshot failed for ' + cameraId);
+        showFallbackImage(cameraId);
+      }
+    };
+    
     imgElement.src = streamUrl;
-    NVR.debug('Video element setup for camera: ' + cameraId);
+    console.log('Video element setup for camera: ' + cameraId);
   }
 }
 
@@ -2351,7 +2370,31 @@ function showFallbackImage(cameraId) {
       });
     }
     NVR.debug('Fallback image shown for camera: ' + cameraId);
+    
+    window.dispatchEvent(new CustomEvent('stream-error', {
+      detail: { cameraId: cameraId, error: 'Stream and snapshot both failed' }
+    }));
   }
+}
+
+function getStreamUrl(monitorId) {
+  var monitor = $scope.MontageMonitors.find(function(m) { 
+    return m.Monitor.Id == monitorId; 
+  });
+  if (!monitor) return null;
+  
+  var baseUrl = monitor.Monitor.streamingURL + '/nph-zms';
+  var streamUrl = baseUrl + '?mode=' + STREAM_MODE + '&monitor=' + monitorId + 
+                  '&scale=100&rand=' + Date.now();
+  
+  if (STREAM_MODE !== 'single' && monitor.Monitor.connKey) {
+    streamUrl += '&connkey=' + monitor.Monitor.connKey;
+  }
+  
+  streamUrl += $rootScope.authSession;
+  streamUrl += NVR.insertSpecialTokens();
+  
+  return streamUrl;
 }
 
 $scope.toggleSubMenuFunction = function () {
@@ -2426,16 +2469,16 @@ $scope.$on('$ionicView.beforeEnter', function () {
   NVR.getZmsMultiPortSupport()
     .then(function (data) {
       //multiPortZms = data;
-      simulStreaming = data > 0 ? true : false;
+      simulStreaming = FORCE_STREAMING || (data > 0 ? true : false);
       //console.log ("****** MULTIPORT="+multiPortZms);
-      NVR.debug("Multiport=" + data);
+      NVR.debug("Multiport=" + data + ", Force streaming=" + FORCE_STREAMING);
 
       /*  if ($rootScope.platformOS == 'ios') {
                 simulStreaming = false;
                 NVR.debug("IOS detected, DISABLING simul streaming");
               }*/
 
-      if (ld.disableSimulStreaming) {
+      if (ld.disableSimulStreaming && !FORCE_STREAMING) {
         simulStreaming = false;
         NVR.debug("Forcing simulStreams off as you have disabled it");
       }

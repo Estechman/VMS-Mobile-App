@@ -2,7 +2,15 @@
 /* jslint browser: true*/
 /* global cordova,StatusBar,angular,console,alert,PushNotification, moment ,ionic, URI,Packery, ConnectSDK, CryptoJS, ContactFindOptions, localforage,$, Connection, MobileAccessibility, hello */
 
+console.debug('Streaming Configuration:', {
+  forceStreaming: true,
+  streamMode: 'jpeg',
+  fallbackMode: 'single'
+});
 
+window.addEventListener('stream-error', function(e) {
+  console.error('Global stream error:', e.detail);
+});
 
 // core app start stuff
 angular.module('zmApp', [
