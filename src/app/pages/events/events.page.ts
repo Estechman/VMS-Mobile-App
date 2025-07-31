@@ -11,6 +11,7 @@ import { NvrService, Monitor } from '../../services/nvr.service';
 import { addIcons } from 'ionicons';
 import { refresh, search, calendar, videocam, archive, trash, download } from 'ionicons/icons';
 import moment from 'moment';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-events',
@@ -134,7 +135,7 @@ export class EventsPage implements OnInit {
     
     const eventId = event.Event.Id;
     const monitorId = event.Event.MonitorId;
-    return `${loginData.apiurl}/events/${eventId}.jpg?width=150&height=100`;
+    return `${environment.apiUrl}/events/${eventId}.jpg?width=150&height=100`;
   }
 
   viewEvent(event: any) {
@@ -154,7 +155,7 @@ export class EventsPage implements OnInit {
     if (!loginData) return;
     
     const eventId = event.Event.Id;
-    let downloadUrl = `${loginData.apiurl}/events/${eventId}.mp4`;
+    let downloadUrl = `${environment.apiUrl}/events/${eventId}.mp4`;
     
     if (loginData.authSession) {
       downloadUrl += `?${loginData.authSession}`;

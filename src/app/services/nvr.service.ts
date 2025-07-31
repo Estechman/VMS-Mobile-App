@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError, of, forkJoin } from 'rxjs';
 import { catchError, map, tap, switchMap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface LoginData {
   serverName: string;
@@ -97,6 +98,7 @@ export interface Event {
   providedIn: 'root'
 })
 export class NvrService {
+  private apiUrl = environment.apiUrl;
   private loginData = new BehaviorSubject<LoginData | null>(null);
   private monitors = new BehaviorSubject<Monitor[]>([]);
   private events = new BehaviorSubject<Event[]>([]);
@@ -169,7 +171,7 @@ export class NvrService {
     }
 
     console.log('🔧 [NVR] Auth is enabled, performing API login');
-    const apiUrl = `${loginData.apiurl}/host/login.json`;
+    const apiUrl = `${this.apiUrl}/host/login.json`;
     const credentials = {
       user: username,
       pass: password
@@ -222,7 +224,7 @@ export class NvrService {
     }
 
     const authSession = this.authSession.value;
-    const apiUrl = `${loginData.apiurl}/host/getVersion.json${authSession}`;
+    const apiUrl = `${this.apiUrl}/host/getVersion.json${authSession}`;
     
     console.log('🔧 [NVR] Making API validation call to:', apiUrl);
     console.log('🔧 [NVR] With auth session:', authSession);
@@ -275,7 +277,7 @@ export class NvrService {
     }
 
     const authSession = this.authSession.value;
-    const apiUrl = `${loginData.apiurl}/monitors.json${authSession}`;
+    const apiUrl = `${this.apiUrl}/monitors.json${authSession}`;
     
     console.log('🔧 [NVR] Making monitors API call to:', apiUrl);
     console.log('🔧 [NVR] With auth session:', authSession);
@@ -325,7 +327,7 @@ export class NvrService {
       return throwError('No login data');
     }
 
-    const apiUrl = `${loginData.apiurl}/host/logout.json${this.authSession.value}`;
+    const apiUrl = `${this.apiUrl}/host/logout.json${this.authSession.value}`;
     return this.http.post(apiUrl, {}).pipe(
       tap(() => {
         this.authSession.next('');
@@ -342,7 +344,7 @@ export class NvrService {
       return throwError('No login data configured');
     }
 
-    let apiUrl = `${loginData.apiurl}/events.json${this.authSession.value}`;
+    let apiUrl = `${this.apiUrl}/events.json${this.authSession.value}`;
     
     const params: string[] = [];
     if (monitorId) params.push(`MonitorId=${monitorId}`);
@@ -369,7 +371,7 @@ export class NvrService {
       return throwError('No login data configured');
     }
 
-    const apiUrl = `${loginData.apiurl}/events/${eventId}.json${this.authSession.value}`;
+    const apiUrl = `${this.apiUrl}/events/${eventId}.json${this.authSession.value}`;
     const data = { 'Event[Archived]': archived ? '1' : '0' };
 
     return this.http.post(apiUrl, data).pipe(
@@ -391,7 +393,7 @@ export class NvrService {
       return throwError('No login data configured');
     }
 
-    const apiUrl = `${loginData.apiurl}/events/${eventId}.json${this.authSession.value}`;
+    const apiUrl = `${this.apiUrl}/events/${eventId}.json${this.authSession.value}`;
 
     return this.http.delete(apiUrl).pipe(
       tap(() => {
