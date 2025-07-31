@@ -5,7 +5,7 @@ import {
   IonRefresher, IonRefresherContent, IonSpinner, IonBadge, IonPopover,
   IonList, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption,
   IonToggle, IonRange, IonFab, IonFabButton, IonActionSheet, IonAlert,
-  AlertController, ActionSheetController
+  IonModal, ModalController, AlertController, ActionSheetController
 } from '@ionic/angular/standalone';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,7 +16,7 @@ import { addIcons } from 'ionicons';
 import { 
   refresh, videocam, videocamOff, camera, play, pause, move, grid,
   add, remove, bicycle, eye, save, trash, settings, resize, chevronDown,
-  chevronUp, close, pin
+  chevronUp, close, pin, folder, notifications
 } from 'ionicons/icons';
 import { GridStack, GridStackWidget } from 'gridstack';
 
@@ -41,6 +41,7 @@ interface MontageMonitor extends Monitor {
     IonRefresher, IonRefresherContent, IonSpinner, IonBadge, IonPopover,
     IonList, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption,
     IonToggle, IonRange, IonFab, IonFabButton, IonActionSheet, IonAlert,
+    IonModal,
     CommonModule, FormsModule
   ]
 })
@@ -48,6 +49,9 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('gridContainer', { static: true }) gridContainer!: ElementRef;
   
   monitors: MontageMonitor[] = [];
+  zmGroups: string[] = [];
+  currentZMGroupNames: string[] = [];
+  tempZMGroups: { name: string; selection: boolean }[] = [];
   isLoading = true;
   isDragMode = false;
   isMinimal = false;
@@ -73,7 +77,8 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     private nvrService: NvrService,
     private restService: RestService,
     private alertController: AlertController,
-    private actionSheetController: ActionSheetController
+    private actionSheetController: ActionSheetController,
+    private modalController: ModalController
   ) {
     console.log('=== MONTAGE DEBUG: Constructor called ===');
     console.log('Available stream states:', this.streamState);
@@ -82,7 +87,7 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     addIcons({ 
       refresh, videocam, videocamOff, camera, play, pause, move, grid,
       add, remove, bicycle, eye, save, trash, settings, resize, chevronDown,
-      chevronUp, close, pin
+      chevronUp, close, pin, folder, notifications
     });
   }
 
@@ -94,6 +99,17 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     this.loadMonitors();
     this.startIntervals();
     this.currentProfileName = this.nvrService.getCurrentMontageProfile() || 'Default';
+    
+    this.nvrService.getZMGroups().subscribe({
+      next: (groups) => {
+        this.zmGroups = groups;
+        console.log('Loaded ZM Groups:', groups);
+      },
+      error: (error) => {
+        console.error('Error loading ZM Groups:', error);
+        this.zmGroups = [];
+      }
+    });
   }
 
   ngAfterViewInit() {
@@ -191,16 +207,32 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private enhanceMonitor(monitor: Monitor): MontageMonitor {
-    return {
+    const enhanced = {
       ...monitor,
-      gridScale: 50,
-      listDisplay: 'show',
-      isAlarmed: false,
+      gridScale: parseInt(monitor.Monitor.gridScale?.toString() || '50') || 50,
+      listDisplay: monitor.Monitor.listDisplay || 'show',
+      isAlarmed: monitor.Monitor.isAlarmed || false,
       isStamp: false,
       selectStyle: '',
       showSidebar: false,
-      eventCount: 0
-    };
+      eventCount: 0,
+      lastEvent: null
+    } as MontageMonitor;
+
+    this.restService.getEvents({ 
+      monitorId: parseInt(monitor.Monitor.Id), 
+      limit: 1 
+    }).subscribe({
+      next: (events) => {
+        if (events && events.length > 0) {
+          enhanced.lastEvent = events[0];
+          enhanced.eventCount = events.length;
+        }
+      },
+      error: (error) => console.error('Error loading events for monitor:', error)
+    });
+
+    return enhanced;
   }
 
   private createMockMonitors() {
@@ -772,5 +804,121 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
 
   trackByMonitorId(index: number, monitor: MontageMonitor): string {
     return monitor.Monitor.Id;
+  }
+
+  async selectZMGroup() {
+    this.tempZMGroups = [];
+    const loginData = this.nvrService.getLogin();
+    
+    if (!loginData || this.zmGroups.length === 0) {
+      return;
+    }
+
+    for (const group of this.zmGroups) {
+      const isSelected = loginData.currentZMGroupNames?.includes(group) || false;
+      this.tempZMGroups.push({
+        name: group,
+        selection: isSelected
+      });
+    }
+    
+    this.tempZMGroups.unshift({ name: 'All', selection: false });
+
+    const alert = await this.alertController.create({
+      header: 'Select Camera Groups',
+      subHeader: `Active: ${loginData.currentZMGroupNames?.join(', ') || 'All'}`,
+      inputs: this.tempZMGroups.map(group => ({
+        type: 'checkbox',
+        label: group.name,
+        value: group.name,
+        checked: group.selection
+      })),
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel'
+        },
+        {
+          text: 'OK',
+          handler: (selectedGroups: string[]) => {
+            const loginData = this.nvrService.getLogin();
+            if (loginData) {
+              if (selectedGroups.includes('All') || selectedGroups.length === 0) {
+                loginData.currentZMGroupNames = [];
+              } else {
+                loginData.currentZMGroupNames = selectedGroups;
+              }
+              this.nvrService.setLogin(loginData);
+              this.applyGroupFilter();
+            }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  private applyGroupFilter() {
+    const loginData = this.nvrService.getLogin();
+    if (!loginData?.currentZMGroupNames || loginData.currentZMGroupNames.length === 0) {
+      this.monitors.forEach(monitor => {
+        monitor.listDisplay = 'show';
+      });
+    } else {
+      this.monitors.forEach(monitor => {
+        const hasMatchingGroup = monitor.Monitor.Group?.some(group => 
+          loginData.currentZMGroupNames!.includes(group)
+        );
+        monitor.listDisplay = hasMatchingGroup ? 'show' : 'noshow';
+      });
+    }
+    this.layoutGridItems();
+  }
+
+  async openMonitorModal(monitorId: string) {
+    const monitor = this.monitors.find(m => m.Monitor.Id === monitorId);
+    if (!monitor) return;
+
+    const alert = await this.alertController.create({
+      header: monitor.Monitor.Name,
+      message: `Monitor ID: ${monitorId}`,
+      subHeader: 'Full-screen view would open here',
+      buttons: ['Close']
+    });
+
+    (window as any).openMonitorModal = (id: string) => {
+      this.openMonitorModal(id);
+    };
+
+    await alert.present();
+  }
+
+  private refreshMonitorImages() {
+    const loginData = this.nvrService.getLogin();
+    const runMode = loginData?.runMode || 'normal';
+    
+    if (runMode === 'lowbw') {
+      this.monitors.forEach(monitor => {
+        if (Math.random() > 0.5) {
+          this.updateMonitorImage(monitor);
+        }
+      });
+    } else {
+      this.monitors.forEach(monitor => {
+        if (monitor.listDisplay === 'show') {
+          this.updateMonitorImage(monitor);
+        }
+      });
+    }
+  }
+
+  private updateMonitorImage(monitor: MontageMonitor) {
+    const imgElement = document.querySelector(`[data-gs-id="${monitor.Monitor.Id}"] img`) as HTMLImageElement;
+    if (imgElement) {
+      this.generateStreamUrl(monitor).then(url => {
+        imgElement.src = url + '&t=' + Date.now();
+      });
+    }
   }
 }

@@ -2,6 +2,10 @@
   <ion-toolbar>
     <ion-buttons slot="start">
       <ion-menu-button></ion-menu-button>
+      <ion-button fill="clear" (click)="selectZMGroup()" title="Camera Groups" 
+                  *ngIf="zmGroups.length > 0">
+        <ion-icon name="folder"></ion-icon>
+      </ion-button>
       <ion-button fill="clear" (click)="toggleHideUnhide()" title="Show/Hide Monitors">
         <ion-icon name="eye"></ion-icon>
       </ion-button>
@@ -66,7 +70,7 @@
   </div>
 
   <!-- GridStack Container -->
-  <div #gridContainer class="grid-stack" *ngIf="!isLoading"></div>
+  <div #gridContainer class="grid-stack" [style.display]="isLoading ? 'none' : 'block'"></div>
 
   <!-- Streaming Mode Controls -->
   <ion-fab vertical="bottom" horizontal="end" slot="fixed" *ngIf="!isMinimal">
