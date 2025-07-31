@@ -69,8 +69,54 @@
     <p>Arranging monitors...</p>
   </div>
 
-  <!-- GridStack Container -->
-  <div #gridContainer class="grid-stack" [style.display]="isLoading ? 'none' : 'block'"></div>
+  <!-- CSS Grid Container for Clean Layout -->
+  <div class="montage-grid" [style.display]="isLoading ? 'none' : 'grid'" *ngIf="!isDragMode">
+    <div *ngFor="let monitor of monitors" class="monitor-card" 
+         [style.display]="monitor.listDisplay === 'show' ? 'block' : 'none'"
+         (dblclick)="maximizeCamera(monitor.Monitor.Id)">
+      <div class="monitor-stream-container" [class.alarmed]="monitor.isAlarmed">
+        <img class="monitor-stream-image" 
+             [src]="getMonitorImageUrl(monitor)" 
+             [alt]="monitor.Monitor.Name"
+             (error)="onImageError($event)">
+        
+        <div class="monitor-overlay">
+          <div class="monitor-status" [style.background-color]="getMonitorStatusColor(monitor)">
+            <ion-icon name="videocam"></ion-icon>
+          </div>
+          <div class="event-overlay" *ngIf="monitor.lastEvent">
+            <ion-icon name="notifications" class="event-icon"></ion-icon>
+            <span class="event-count">{{monitor.eventCount}}</span>
+          </div>
+          <div class="stamp-indicator" *ngIf="monitor.isStamp">
+            <ion-icon name="pin"></ion-icon>
+          </div>
+        </div>
+        
+        <div class="monitor-timestamp">
+          {{getCurrentTime()}}
+        </div>
+        
+        <div class="version-badge" *ngIf="monitor.version">
+          {{monitor.version}}
+        </div>
+      </div>
+      
+      <div class="monitor-info">
+        <h4>{{monitor.Monitor.Name}}</h4>
+        <span class="monitor-id">ID: {{monitor.Monitor.Id}}</span>
+        <small class="grid-position" *ngIf="monitor.gridPosition">
+          ({{monitor.gridPosition.row}}, {{monitor.gridPosition.col}})
+        </small>
+        <div class="event-info" *ngIf="monitor.lastEvent">
+          <small>Latest: {{monitor.lastEvent.Event?.StartTime || 'Unknown'}}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GridStack Container for Drag Mode -->
+  <div #gridContainer class="grid-stack" [style.display]="isLoading ? 'none' : (isDragMode ? 'block' : 'none')"></div>
 
   <!-- Streaming Mode Controls -->
   <ion-fab vertical="bottom" horizontal="end" slot="fixed" *ngIf="!isMinimal">

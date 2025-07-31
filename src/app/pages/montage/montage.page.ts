@@ -29,6 +29,11 @@ interface MontageMonitor extends Monitor {
   showSidebar: boolean;
   lastEvent?: any;
   eventCount: number;
+  gridPosition?: {
+    row: number;
+    col: number;
+  };
+  version?: string;
 }
 
 @Component({
@@ -253,6 +258,8 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     console.log('Current stream state before mock creation:', this.currentStreamState);
     
     const mockMonitors: any[] = [];
+    const columnsPerRow = 3; // Standard grid layout
+    
     for (let i = 1; i <= 12; i++) {
       mockMonitors.push({
         Monitor: {
@@ -270,7 +277,12 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
         isStamp: false,
         selectStyle: '',
         showSidebar: false,
-        eventCount: 0
+        eventCount: 0,
+        gridPosition: {
+          row: Math.floor((i - 1) / columnsPerRow),
+          col: (i - 1) % columnsPerRow
+        },
+        version: `1.0.${i}`
       });
     }
     this.monitors = mockMonitors as any;
@@ -998,5 +1010,17 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     timestampElements.forEach(element => {
       element.textContent = currentTime;
     });
+  }
+
+  getMonitorImageUrl(monitor: MontageMonitor): string {
+    return `https://demo.zoneminder.com/zm/cgi-bin/nph-zms?mode=jpeg&monitor=${monitor.Monitor.Id}&scale=50&maxfps=5&buffer=1000&t=${Date.now()}`;
+  }
+
+  onImageError(event: any) {
+    event.target.src = 'assets/img/noimage.png';
+  }
+
+  getCurrentTime(): string {
+    return new Date().toLocaleTimeString();
   }
 }
