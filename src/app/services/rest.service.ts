@@ -3,11 +3,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, debounceTime } from 'rxjs/operators';
 import { NvrService } from './nvr.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RestService {
+  private apiUrl = environment.apiUrl;
+
   constructor(
     private http: HttpClient,
     private nvrService: NvrService
@@ -29,7 +32,7 @@ export class RestService {
     }
     
     const authSession = this.nvrService.getAuthSession();
-    const apiUrl = `${loginData.apiurl}/montage.json${authSession}`;
+    const apiUrl = `${this.apiUrl}/montage.json${authSession}`;
 
     return this.http.get(apiUrl, { params }).pipe(
       debounceTime(500),

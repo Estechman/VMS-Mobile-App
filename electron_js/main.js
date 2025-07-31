@@ -137,6 +137,11 @@ function createWindow() {
 
   mainWindowState.manage(win);
 
+  win.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
+    details.requestHeaders['Origin'] = 'app://electron';
+    callback({ requestHeaders: details.requestHeaders });
+  });
+
 
 
   // fs will be arg 1 if its not run in electron debug mode
