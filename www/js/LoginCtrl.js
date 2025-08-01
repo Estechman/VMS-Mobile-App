@@ -616,7 +616,7 @@ $scope.portalKeypress = function (evt) {
     }
 
     if (parseInt($scope.loginData.maxMontage) <= 0) {
-      $scope.loginData.maxMontage = "100";
+      $scope.loginData.maxMontage = "500";
     }
 
     // do this before setLogin so message is sent
