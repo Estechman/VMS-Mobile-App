@@ -1225,8 +1225,19 @@ function calculateGridSize(cameraCount) {
                   
                   NVR.debug('Group:'+$scope.currentZMGroupName+' setting '+$scope.MontageMonitors[iz].Monitor.Name +' to '+ $scope.MontageMonitors[iz].Monitor.listDisplay);
                   
+                  if (previousDisplay == 'show' && !isShow && simulStreaming) {
+                    NVR.debug('Killing stream for hidden monitor: ' + $scope.MontageMonitors[iz].Monitor.Name);
+                    NVR.killLiveStream(
+                      $scope.MontageMonitors[iz].Monitor.connKey,
+                      $scope.MontageMonitors[iz].Monitor.controlURL,
+                      $scope.MontageMonitors[iz].Monitor.Name);
+                    $scope.MontageMonitors[iz].Monitor.connKey = null;
+                    $scope.MontageMonitors[iz].Monitor.streamState = 'stopped';
+                  }
+                  
                   if (isShow && simulStreaming) {
                     $scope.MontageMonitors[iz].Monitor.connKey = NVR.genConnKey();
+                    $scope.MontageMonitors[iz].Monitor.streamState = 'good';
                     NVR.debug('Generated new connKey for visible monitor: ' + $scope.MontageMonitors[iz].Monitor.Name);
                   }
                 }
@@ -2477,16 +2488,21 @@ function loadStreamQueryStatus () {
 $scope.constructStream = function(monitor) {
   var stream;
   //console.log ('MID='+monitor.Monitor.Id+" listDisplay:"+monitor.Monitor.listDisplay);
-  if (currentStreamState == streamState.STOPPED || monitor.Monitor.listDisplay == 'noshow' ) {
+  if (currentStreamState == streamState.STOPPED || monitor.Monitor.listDisplay == 'noshow' || monitor.Monitor.streamState == 'stopped') {
     //console.log("STREAM=empty and auth="+$rootScope.authSession);
     //sconsole.log('EMPTY STREAM');
-    NVR.debug('Returning empty URL for monitor ' + monitor.Monitor.Name + ' (display: ' + monitor.Monitor.listDisplay + ', state: ' + currentStreamState + ')');
+    NVR.debug('Returning empty URL for monitor ' + monitor.Monitor.Name + ' (display: ' + monitor.Monitor.listDisplay + ', streamState: ' + (monitor.Monitor.streamState || 'unknown') + ', state: ' + currentStreamState + ')');
     return "";
   }
 
   if (monitor.Monitor.listDisplay == 'blank') {
     //console.log(monitor.Monitor.Id + " is hidden");
     NVR.debug('Returning empty URL for monitor ' + monitor.Monitor.Name + ' (display: blank)');
+    return "";
+  }
+
+  if (!monitor.Monitor.connKey) {
+    NVR.debug('Returning empty URL for monitor ' + monitor.Monitor.Name + ' (no connKey)');
     return "";
   }
 
