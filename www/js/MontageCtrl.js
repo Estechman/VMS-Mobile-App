@@ -1205,6 +1205,7 @@ function calculateGridSize(cameraCount) {
                       $scope.MontageMonitors[iz].Monitor.controlURL,
                       $scope.MontageMonitors[iz].Monitor.Name);
                     $scope.MontageMonitors[iz].Monitor.connKey = null;
+                    $scope.MontageMonitors[iz].Monitor.streamState = 'stopped';
                   }
                 }
 
@@ -1261,6 +1262,12 @@ function calculateGridSize(cameraCount) {
                 $timeout(function () {
                   beforeReorderPositions = pckry.getShiftPositions('data-item-id');
                   finishReorder();
+                  
+                  $timeout(function() {
+                    NVR.debug('Forcing stream restart after group change');
+                    currentStreamState = streamState.ACTIVE;
+                    randEachTime(); // Force image refresh to restart streams
+                  }, 500);
                 },300);
               } else {
                 NVR.debug ("No action taken as selection is same as current");
