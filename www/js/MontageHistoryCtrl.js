@@ -117,18 +117,18 @@ angular.module('zmApp.controllers').controller('zmApp.MontageHistoryCtrl', ['$sc
       }
     }
     if (m != -1) {
-      $scope.MontageMonitors[i].Monitor.seek = true;
+      $scope.MontageMonitors[m].Monitor.seek = true;
     }
 
     sendCmd(mid, '14', "&offset=" + p)
       .then(function (success) {
-          //console.log ("Removing seek status from "  + $scope.MontageMonitors[i].Monitor.Name);
-          $scope.MontageMonitors[i].Monitor.seek = false;
+          //console.log ("Removing seek status from "  + $scope.MontageMonitors[m].Monitor.Name);
+          $scope.MontageMonitors[m].Monitor.seek = false;
 
         },
         function (err) {
-          //console.log ("Removing seek status from "  + $scope.MontageMonitors[i].Monitor.Name);
-          $scope.MontageMonitors[i].Monitor.seek = false;
+          //console.log ("Removing seek status from "  + $scope.MontageMonitors[m].Monitor.Name);
+          $scope.MontageMonitors[m].Monitor.seek = false;
         });
 
   };
