@@ -1249,6 +1249,14 @@ function calculateGridSize(cameraCount) {
                 }
                 $scope.monitors = $scope.MontageMonitors;
                 NVR.setMonitors($scope.MontageMonitors);
+                var currentGridScales = {};
+                for (var iz = 0; iz < $scope.MontageMonitors.length; iz++) {
+                  if ($scope.MontageMonitors[iz].Monitor.gridScale) {
+                    currentGridScales[$scope.MontageMonitors[iz].Monitor.Id] = $scope.MontageMonitors[iz].Monitor.gridScale;
+                    NVR.debug('Preserving gridScale for monitor ' + $scope.MontageMonitors[iz].Monitor.Id + ': ' + $scope.MontageMonitors[iz].Monitor.gridScale);
+                  }
+                }
+                
                 ld.packeryPositions = undefined;
                 NVR.setLogin(ld)
                   .then (function() {
@@ -1257,45 +1265,58 @@ function calculateGridSize(cameraCount) {
                     //matchMonitorsToPositions(p);
                     initPackery().then (function () {
                       NVR.debug ("initPackery over, storing positions");
+                      
+                      for (var iz = 0; iz < $scope.MontageMonitors.length; iz++) {
+                        var monitorId = $scope.MontageMonitors[iz].Monitor.Id;
+                        if (currentGridScales[monitorId]) {
+                          $scope.MontageMonitors[iz].Monitor.gridScale = currentGridScales[monitorId];
+                          NVR.debug('Restored gridScale for monitor ' + monitorId + ': ' + currentGridScales[monitorId]);
+                        }
+                      }
+                      
                       var positions = pckry.getShiftPositions('data-item-id');
                       var ld = NVR.getLogin();
                       ld.packeryPositions = JSON.stringify(positions);
                       NVR.setLogin(ld);
+                      
+                      $timeout(function() {
+                        NVR.debug('=== FORCING STREAM RESTART AFTER GROUP CHANGE (POST-LAYOUT) ===');
+                        NVR.debug('Forcing stream restart after group change at: ' + new Date().toISOString());
+                        currentStreamState = streamState.ACTIVE;
+                        
+                        var visibleAfterGroup = 0;
+                        var restartedAfterGroup = 0;
+                        
+                        for (var iz = 0; iz < $scope.MontageMonitors.length; iz++) {
+                          if ($scope.MontageMonitors[iz].Monitor.listDisplay === 'show') {
+                            visibleAfterGroup++;
+                            // Always regenerate connection key for visible monitors
+                            $scope.MontageMonitors[iz].Monitor.connKey = NVR.genConnKey();
+                            $scope.MontageMonitors[iz].Monitor.streamState = 'good';
+                            
+                            var imgElement = document.getElementById('img-' + iz);
+                            if (imgElement) {
+                              var newSrc = $scope.constructStream($scope.MontageMonitors[iz]);
+                              newSrc += (newSrc.indexOf('?') > -1 ? '&' : '?') + '_t=' + new Date().getTime();
+                              imgElement.src = newSrc;
+                              NVR.debug('Force updated image src with cache bust for: ' + $scope.MontageMonitors[iz].Monitor.Name);
+                            }
+                            
+                            NVR.debug('Regenerated connKey after group change: ' + $scope.MontageMonitors[iz].Monitor.Name + ' -> ' + $scope.MontageMonitors[iz].Monitor.connKey);
+                            restartedAfterGroup++;
+                          }
+                        }
+                        
+                        NVR.debug('Visible after group change: ' + visibleAfterGroup + ', Restarted: ' + restartedAfterGroup);
+                        randEachTime();
+                        NVR.debug('=== GROUP CHANGE STREAM RESTART COMPLETE ===');
+                      }, 200);
                     });
                   });
 
                 $timeout(function () {
                   beforeReorderPositions = pckry.getShiftPositions('data-item-id');
                   finishReorder();
-                  
-                  $timeout(function() {
-                    NVR.debug('=== FORCING STREAM RESTART AFTER GROUP CHANGE ===');
-                    NVR.debug('Forcing stream restart after group change at: ' + new Date().toISOString());
-                    currentStreamState = streamState.ACTIVE;
-                    
-                    var visibleAfterGroup = 0;
-                    var restartedAfterGroup = 0;
-                    
-                    for (var iz = 0; iz < $scope.MontageMonitors.length; iz++) {
-                      if ($scope.MontageMonitors[iz].Monitor.listDisplay === 'show') {
-                        visibleAfterGroup++;
-                        $scope.MontageMonitors[iz].Monitor.connKey = NVR.genConnKey();
-                        $scope.MontageMonitors[iz].Monitor.streamState = 'good';
-                        var imgElement = document.getElementById('img-' + iz);
-                        if (imgElement) {
-                          var newSrc = $scope.constructStream($scope.MontageMonitors[iz]);
-                          imgElement.src = newSrc;
-                          NVR.debug('Force updated image src for: ' + $scope.MontageMonitors[iz].Monitor.Name);
-                        }
-                        NVR.debug('Regenerated connKey after group change: ' + $scope.MontageMonitors[iz].Monitor.Name + ' -> ' + $scope.MontageMonitors[iz].Monitor.connKey);
-                        restartedAfterGroup++;
-                      }
-                    }
-                    
-                    NVR.debug('Visible after group change: ' + visibleAfterGroup + ', Restarted: ' + restartedAfterGroup);
-                    randEachTime();
-                    NVR.debug('=== GROUP CHANGE STREAM RESTART COMPLETE ===');
-                  }, 500);
                 },300);
               } else {
                 NVR.debug ("No action taken as selection is same as current");
@@ -1345,8 +1366,9 @@ function calculateGridSize(cameraCount) {
             var imgElement = document.getElementById('img-' + iz);
             if (imgElement) {
               var newSrc = $scope.constructStream($scope.MontageMonitors[iz]);
+              newSrc += (newSrc.indexOf('?') > -1 ? '&' : '?') + '_t=' + new Date().getTime();
               imgElement.src = newSrc;
-              NVR.debug('Force updated image src for manual restart: ' + $scope.MontageMonitors[iz].Monitor.Name);
+              NVR.debug('Force updated image src with cache bust for manual restart: ' + $scope.MontageMonitors[iz].Monitor.Name);
             }
             
             NVR.debug('Generated new connKey for restart: ' + $scope.MontageMonitors[iz].Monitor.Name + ' -> ' + $scope.MontageMonitors[iz].Monitor.connKey);
