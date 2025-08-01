@@ -641,14 +641,18 @@ angular.module('zmApp', [
               var ld = NVR.getLogin();
               if (ld.isUseAuth && ($rootScope.authSession=='')) {
                 NVR.log("waiting for authSession to have a value...");
-              } else if ($attributes.imageSpinnerSrc && $attributes.imageSpinnerSrc.trim() !== '') {
+              } else if ($attributes.imageSpinnerSrc && 
+                         $attributes.imageSpinnerSrc.trim() !== '' && 
+                         $attributes.imageSpinnerSrc !== 'undefined' &&
+                         $attributes.imageSpinnerSrc !== 'null') {
+                NVR.debug("Setting image src for: " + ($attributes.monitorName || 'unknown') + " URL: " + $attributes.imageSpinnerSrc.substring(0, 50) + "...");
                 if (typeof initCameraStream === 'function' && $attributes.cameraId) {
                   initCameraStream($attributes.cameraId);
                 } else {
                   $element[0].src = $attributes.imageSpinnerSrc; // set src 
                 }
               } else {
-                NVR.log("No imageSpinnerSrc or empty URL!");
+                NVR.debug("Skipping image load - empty/invalid URL for monitor: " + ($attributes.monitorName || 'unknown'));
               }
             }
           }

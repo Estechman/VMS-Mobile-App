@@ -921,8 +921,21 @@ function calculateGridSize(cameraCount) {
         return;
       }
 
-      //if (pckry && !$scope.isDragabillyOn) pckry.shiftLayout();
-      $rootScope.rand = Math.floor((Math.random() * 100000) + 1);
+      var hasVisibleMonitors = false;
+      for (var i = 0; i < $scope.MontageMonitors.length; i++) {
+        if ($scope.MontageMonitors[i].Monitor.listDisplay == 'show') {
+          hasVisibleMonitors = true;
+          break;
+        }
+      }
+      
+      if (hasVisibleMonitors) {
+        //if (pckry && !$scope.isDragabillyOn) pckry.shiftLayout();
+        $rootScope.rand = Math.floor((Math.random() * 100000) + 1);
+        NVR.debug("Updated rand for " + $scope.MontageMonitors.filter(m => m.Monitor.listDisplay == 'show').length + " visible monitors");
+      } else {
+        NVR.debug("Skipping rand update - no visible monitors");
+      }
 
       // if you see the time move, montage should move
 
@@ -1185,12 +1198,13 @@ function calculateGridSize(cameraCount) {
                 if (simulStreaming) currentStreamState = streamState.STOPPED;
                 
                 for (var iz = 0; iz < $scope.MontageMonitors.length; iz++) {
-                  if ($scope.MontageMonitors[iz].Monitor.listDisplay == 'show' && simulStreaming) {
+                  if ($scope.MontageMonitors[iz].Monitor.connKey && simulStreaming) {
                     NVR.debug('Killing stream for monitor before group change: ' + $scope.MontageMonitors[iz].Monitor.Name);
                     NVR.killLiveStream(
                       $scope.MontageMonitors[iz].Monitor.connKey,
                       $scope.MontageMonitors[iz].Monitor.controlURL,
                       $scope.MontageMonitors[iz].Monitor.Name);
+                    $scope.MontageMonitors[iz].Monitor.connKey = null;
                   }
                 }
 
@@ -1211,12 +1225,9 @@ function calculateGridSize(cameraCount) {
                   
                   NVR.debug('Group:'+$scope.currentZMGroupName+' setting '+$scope.MontageMonitors[iz].Monitor.Name +' to '+ $scope.MontageMonitors[iz].Monitor.listDisplay);
                   
-                  if (previousDisplay == 'show' && !isShow && simulStreaming) {
-                    NVR.debug('Killing stream for hidden monitor: ' + $scope.MontageMonitors[iz].Monitor.Name);
-                    NVR.killLiveStream(
-                      $scope.MontageMonitors[iz].Monitor.connKey,
-                      $scope.MontageMonitors[iz].Monitor.controlURL,
-                      $scope.MontageMonitors[iz].Monitor.Name);
+                  if (isShow && simulStreaming) {
+                    $scope.MontageMonitors[iz].Monitor.connKey = NVR.genConnKey();
+                    NVR.debug('Generated new connKey for visible monitor: ' + $scope.MontageMonitors[iz].Monitor.Name);
                   }
                 }
                 $scope.monitors = $scope.MontageMonitors;
@@ -2441,7 +2452,8 @@ function loadStreamQueryStatus () {
   
   if (currentStreamState != streamState.ACTIVE || !simulStreaming) return;
 
-  NVR.debug('Montage View: Stream Status check');
+  var visibleMonitors = $scope.MontageMonitors.filter(m => m.Monitor.listDisplay == 'show');
+  NVR.debug('Montage View: Stream Status check for ' + visibleMonitors.length + ' visible monitors out of ' + $scope.MontageMonitors.length + ' total');
 
   for (var i=0; i < $scope.MontageMonitors.length; i++) {
     var monitor = $scope.MontageMonitors[i].Monitor;
@@ -2451,12 +2463,13 @@ function loadStreamQueryStatus () {
     }
     var query = monitor.recordingURL+'/index.php?view=request&request=stream&command=99';
     if (!monitor.connKey) {
-      console.log("No connKey for "+monitor.Id);
+      NVR.debug("No connKey for "+monitor.Name+" ("+monitor.Id+") - skipping stream query");
       continue;
     }
 
     query += appendConnKey(monitor.connKey);
     query += $rootScope.authSession;
+    NVR.debug('Stream query for visible monitor: ' + monitor.Name);
     checkValidConnkey(query, i);
   }
 }
@@ -2467,7 +2480,7 @@ $scope.constructStream = function(monitor) {
   if (currentStreamState == streamState.STOPPED || monitor.Monitor.listDisplay == 'noshow' ) {
     //console.log("STREAM=empty and auth="+$rootScope.authSession);
     //sconsole.log('EMPTY STREAM');
-    NVR.debug('Returning empty URL for monitor ' + monitor.Monitor.Name + ' (display: ' + monitor.Monitor.listDisplay + ')');
+    NVR.debug('Returning empty URL for monitor ' + monitor.Monitor.Name + ' (display: ' + monitor.Monitor.listDisplay + ', state: ' + currentStreamState + ')');
     return "";
   }
 
@@ -2510,7 +2523,7 @@ $scope.constructStream = function(monitor) {
   stream += $rootScope.authSession;
   stream += NVR.insertSpecialTokens();
   //NVR.debug(stream);
-  NVR.debug('Constructed stream URL for monitor ' + monitor.Monitor.Name + ': ' + (stream ? 'valid URL' : 'empty'));
+  NVR.debug('Constructed stream URL for monitor ' + monitor.Monitor.Name + ' (display: ' + monitor.Monitor.listDisplay + '): ' + (stream ? 'valid URL' : 'empty'));
   return stream;
 };
 
