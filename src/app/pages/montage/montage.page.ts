@@ -9,9 +9,11 @@ import {
 } from '@ionic/angular/standalone';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
 import { Subscription, interval } from 'rxjs';
 import { NvrService, Monitor } from '../../services/nvr.service';
 import { RestService } from '../../services/rest.service';
+import { GroupSelectionDialogComponent } from './group-selection-dialog.component';
 import { addIcons } from 'ionicons';
 import { 
   refresh, videocam, videocamOff, camera, play, pause, move, grid,
@@ -60,6 +62,7 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   isLoading = true;
   isDragMode = false;
   isMinimal = false;
+  isGroupSwitching = false;
   showSubMenu = false;
   currentProfileName = 'Default';
   selectAllToggle = true;
@@ -69,6 +72,7 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   private cycleInterval?: Subscription;
   private alarmInterval?: Subscription;
   private gridStack?: GridStack;
+  private resizeObserver?: ResizeObserver;
   
   private streamState = {
     SNAPSHOT: 1,
@@ -83,7 +87,8 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     private restService: RestService,
     private alertController: AlertController,
     private actionSheetController: ActionSheetController,
-    private modalController: ModalController
+    private modalController: ModalController,
+    private dialog: MatDialog
   ) {
     console.log('=== MONTAGE DEBUG: Constructor called ===');
     console.log('Available stream states:', this.streamState);
@@ -129,6 +134,7 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
         setTimeout(() => this.initializeGridStack(), 200);
       } else {
         this.initializeGridStack();
+        this.setupResizeObserver();
         
         if (this.monitors.length > 0) {
           setTimeout(() => this.layoutGridItems(), 100);
@@ -137,12 +143,74 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
     }, 1000);
   }
 
+  private setupResizeObserver() {
+    if (typeof ResizeObserver !== 'undefined' && this.gridContainer?.nativeElement) {
+      this.resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          console.log('🔧 [MONTAGE] Container resized, recalculating layout...');
+          this.debounceGridRecalculation();
+        }
+      });
+      
+      this.resizeObserver.observe(this.gridContainer.nativeElement);
+      console.log('🔧 [MONTAGE] ResizeObserver initialized');
+    }
+  }
+
+  private debounceGridRecalculation = this.debounce(() => {
+    if (this.gridStack) {
+      this.gridStack.compact();
+      this.calculateOptimalCellSize();
+    }
+  }, 300);
+
+  private debounce(func: Function, wait: number) {
+    let timeout: any;
+    return function executedFunction(...args: any[]) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  private calculateOptimalCellSize() {
+    if (!this.gridContainer?.nativeElement) return;
+    
+    const container = this.gridContainer.nativeElement;
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    const visibleMonitors = this.monitors.filter(m => m.listDisplay === 'show').length;
+    
+    if (visibleMonitors === 0) return;
+    
+    const aspectRatio = containerWidth / containerHeight;
+    const cols = Math.ceil(Math.sqrt(visibleMonitors * aspectRatio));
+    const rows = Math.ceil(visibleMonitors / cols);
+    
+    const cellWidth = Math.floor(containerWidth / cols) - 16;
+    const cellHeight = Math.floor(containerHeight / rows) - 16;
+    
+    console.log('🔧 [MONTAGE] Calculated optimal cell size:', { cellWidth, cellHeight, cols, rows });
+    
+    if (this.gridStack) {
+      this.gridStack.cellHeight(cellHeight);
+      this.gridStack.column(cols);
+    }
+  }
+
   ngOnDestroy() {
     this.subscriptions.unsubscribe();
     this.refreshInterval?.unsubscribe();
     this.cycleInterval?.unsubscribe();
     this.alarmInterval?.unsubscribe();
     this.gridStack?.destroy();
+    
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
   }
 
   private initializeGridStack() {
@@ -857,56 +925,64 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   async selectZMGroup() {
-    this.tempZMGroups = [];
     const loginData = this.nvrService.getLogin();
     
     if (!loginData || this.zmGroups.length === 0) {
       return;
     }
 
-    for (const group of this.zmGroups) {
-      const isSelected = loginData.currentZMGroupNames?.includes(group) || false;
-      this.tempZMGroups.push({
-        name: group,
-        selection: isSelected
-      });
-    }
-    
-    this.tempZMGroups.unshift({ name: 'All', selection: false });
+    this.isGroupSwitching = true;
 
-    const alert = await this.alertController.create({
-      header: 'Select Camera Groups',
-      subHeader: `Active: ${loginData.currentZMGroupNames?.join(', ') || 'All'}`,
-      inputs: this.tempZMGroups.map(group => ({
-        type: 'checkbox',
-        label: group.name,
-        value: group.name,
-        checked: group.selection
-      })),
-      buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel'
-        },
-        {
-          text: 'OK',
-          handler: (selectedGroups: string[]) => {
-            const loginData = this.nvrService.getLogin();
-            if (loginData) {
-              if (selectedGroups.includes('All') || selectedGroups.length === 0) {
-                loginData.currentZMGroupNames = [];
-              } else {
-                loginData.currentZMGroupNames = selectedGroups;
-              }
-              this.nvrService.setLogin(loginData);
-              this.applyGroupFilter();
-            }
-          }
-        }
-      ]
+    const dialogRef = this.dialog.open(GroupSelectionDialogComponent, {
+      width: '350px',
+      data: {
+        groups: ['All', ...this.zmGroups],
+        currentSelection: loginData.currentZMGroupNames?.[0] || 'All'
+      }
     });
 
-    await alert.present();
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.switchGroup(result);
+      } else {
+        this.isGroupSwitching = false;
+      }
+    });
+  }
+
+  private async switchGroup(selectedGroup: string) {
+    console.log('🔧 [MONTAGE] Switching to group:', selectedGroup);
+    
+    this.isLoading = true;
+    
+    try {
+      this.stopAllActiveStreams();
+      
+      this.resetCurrentLayout();
+      
+      const loginData = this.nvrService.getLogin();
+      if (loginData) {
+        if (selectedGroup === 'All') {
+          loginData.currentZMGroupNames = [];
+        } else {
+          loginData.currentZMGroupNames = [selectedGroup];
+        }
+        this.nvrService.setLogin(loginData);
+      }
+      
+      this.applyGroupFilter();
+      
+      setTimeout(() => {
+        this.initializeNewGroupStreams();
+        this.isLoading = false;
+        this.isGroupSwitching = false;
+      }, 500);
+      
+    } catch (error) {
+      console.error('🔧 [MONTAGE] Error switching groups:', error);
+      this.isLoading = false;
+      this.isGroupSwitching = false;
+    }
   }
 
   private applyGroupFilter() {
@@ -924,6 +1000,38 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
       });
     }
     this.layoutGridItems();
+  }
+
+  private stopAllActiveStreams() {
+    console.log('🔧 [MONTAGE] Stopping all active streams...');
+    
+    const videoElements = document.querySelectorAll('.monitor-stream-image') as NodeListOf<HTMLImageElement>;
+    videoElements.forEach(img => {
+      img.src = '';
+      img.removeAttribute('src');
+    });
+    
+    this.refreshInterval?.unsubscribe();
+    
+    this.currentStreamState = this.streamState.STOPPED;
+  }
+
+  private resetCurrentLayout() {
+    console.log('🔧 [MONTAGE] Resetting current layout...');
+    
+    if (this.gridStack) {
+      this.gridStack.removeAll();
+    }
+  }
+
+  private initializeNewGroupStreams() {
+    console.log('🔧 [MONTAGE] Initializing streams for new group...');
+    
+    this.currentStreamState = this.streamState.SNAPSHOT;
+    
+    this.startIntervals();
+    
+    this.refreshMonitorImages();
   }
 
   async openMonitorModal(monitorId: string) {
@@ -1017,7 +1125,22 @@ export class MontagePage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   onImageError(event: any) {
-    event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDI0MCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyNDAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xMjAgOTBMMTAwIDcwSDE0MEwxMjAgOTBaIiBmaWxsPSIjQ0NDIi8+CjxjaXJjbGUgY3g9IjEyMCIgY3k9IjkwIiByPSI0IiBmaWxsPSIjOTk5Ii8+Cjx0ZXh0IHg9IjEyMCIgeT0iMTIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNjY2IiBmb250LXNpemU9IjEyIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+';
+    const monitor = this.monitors.find(m => 
+      event.target.getAttribute('data-monitor-id') === m.Monitor.Id
+    );
+    
+    if (monitor) {
+      console.warn('🔧 [MONTAGE] Stream failed for monitor:', monitor.Monitor.Name);
+      event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDI0MCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyNDAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xMjAgOTBMMTAwIDcwSDE0MEwxMjAgOTBaIiBmaWxsPSIjQ0NDIi8+CjxjaXJjbGUgY3g9IjEyMCIgY3k9IjkwIiByPSI0IiBmaWxsPSIjOTk5Ii8+Cjx0ZXh0IHg9IjEyMCIgeT0iMTIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNjY2IiBmb250LXNpemU9IjEyIj5TdHJlYW0gRXJyb3I8L3RleHQ+Cjx0ZXh0IHg9IjEyMCIgeT0iMTQwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjEwIj5DbGljayB0byBSZXRyeTwvdGV4dD4KPC9zdmc+';
+      
+      event.target.onclick = () => this.retryMonitorStream(monitor);
+      event.target.style.cursor = 'pointer';
+    }
+  }
+
+  private retryMonitorStream(monitor: MontageMonitor) {
+    console.log('🔧 [MONTAGE] Retrying stream for monitor:', monitor.Monitor.Name);
+    this.updateMonitorImage(monitor);
   }
 
   getCurrentTime(): string {

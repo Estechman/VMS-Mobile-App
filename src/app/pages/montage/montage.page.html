@@ -65,8 +65,9 @@
   </ion-refresher>
 
   <div *ngIf="isLoading" class="loading-container">
-    <ion-spinner name="crescent"></ion-spinner>
-    <p>Arranging monitors...</p>
+    <ion-spinner name="crescent" color="primary"></ion-spinner>
+    <p>{{ isGroupSwitching ? 'Switching groups...' : 'Arranging monitors...' }}</p>
+    <small *ngIf="isGroupSwitching">Stopping previous streams and loading new group</small>
   </div>
 
   <!-- CSS Grid Container for Clean Layout with Virtual Scrolling -->
@@ -79,6 +80,7 @@
         <img class="monitor-stream-image" 
              [src]="getMonitorImageUrl(monitor)" 
              [alt]="monitor.Monitor.Name"
+             [attr.data-monitor-id]="monitor.Monitor.Id"
              (error)="onImageError($event)">
         
         <div class="monitor-overlay">
@@ -171,15 +173,24 @@
   align-items: center;
   justify-content: center;
   height: 50vh;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 .montage-grid {
   padding: 8px;
+  transition: opacity 0.3s ease-in-out;
 }
 
 .monitor-card {
   margin: 4px;
   border-radius: 8px;
+  transition: transform 0.2s ease, opacity 0.3s ease;
+  animation: slideInUp 0.4s ease-out;
+}
+
+.monitor-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .monitor-stream-container {
@@ -187,12 +198,14 @@
   width: 100%;
   height: 200px;
   overflow: hidden;
+  transition: all 0.3s ease;
 }
 
 .monitor-stream-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: opacity 0.3s ease;
 }
 
 .monitor-overlay {
@@ -215,5 +228,41 @@
   justify-content: center;
   height: 50vh;
   text-align: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.group-transition-spinner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: rgba(0,0,0,0.8);
+  padding: 20px;
+  border-radius: 8px;
+  color: white;
+}
+
+.gridstack-item {
+  transition: all 0.3s ease;
+}
+
+.gridstack-item.grid-stack-animate {
+  transition: all 0.3s ease;
 }
 </style>
