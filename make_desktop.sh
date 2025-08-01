@@ -132,6 +132,11 @@ do
                 exe cp app/www/js/NVR.js /tmp
                 
                 rm -fr app.asar
+                
+                if [[ "$i" == *"mac"* ]]; then
+                    rm -fr default_app.asar
+                    echo "Removed default_app.asar to prevent conflict with custom app directory"
+                fi
 
                 # No idea why but asar is causing problems in windows
                 # main.js changes are not showig up. wuh? - Sep 29, 2017
