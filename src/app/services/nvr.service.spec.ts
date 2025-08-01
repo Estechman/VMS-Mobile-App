@@ -89,9 +89,13 @@ describe('NvrService', () => {
       expect(monitors[0].Monitor.connKey).toBeDefined();
     });
 
-    const req = httpMock.expectOne(req => req.url.includes('monitors.json'));
-    expect(req.request.method).toBe('GET');
-    req.flush({ monitors: mockMonitors });
+    const monitorsReq = httpMock.expectOne(req => req.url.includes('monitors.json'));
+    expect(monitorsReq.request.method).toBe('GET');
+    monitorsReq.flush({ monitors: mockMonitors });
+
+    const daemonReq = httpMock.expectOne(req => req.url.includes('daemonStatus/id:1/daemon:zmc.json'));
+    expect(daemonReq.request.method).toBe('GET');
+    daemonReq.flush({ statustext: 'running since 2024-01-01' });
   });
 
   it('should handle login error', () => {

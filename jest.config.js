@@ -32,5 +32,10 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html'],
   transformIgnorePatterns: [
     'node_modules/(?!(@angular|@ionic|@stencil|ionicons|rxjs|@ngrx)/)'
-  ]
+  ],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@app/(.*)$': '<rootDir>/src/app/$1',
+    '^ionicons/(.*)$': '<rootDir>/node_modules/ionicons/$1'
+  }
 };
