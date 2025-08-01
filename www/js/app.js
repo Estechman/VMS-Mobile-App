@@ -15,10 +15,13 @@ if (!window.zmMontageConfig) {
   };
 }
 
-console.debug('Streaming Configuration:', {
+console.debug('Enhanced Streaming Configuration:', {
   forceStreaming: true,
   streamMode: 'jpeg',
-  fallbackMode: 'single'
+  fallbackMode: 'single',
+  mjpegFetch: window.zmMontageConfig?.MJPEG_FETCH_ENABLED || true,
+  gpuAcceleration: window.zmMontageConfig?.GPU_ACCELERATION || true,
+  maxRetries: window.zmMontageConfig?.MAX_RETRIES || 5
 });
 
 window.addEventListener('stream-error', function(e) {

@@ -64,28 +64,120 @@ angular.module('zmApp.controllers')
     }
 
     const MontageStream = {
-      MAX_RETRIES: window.zmMontageConfig ? window.zmMontageConfig.MAX_RETRIES : 3,
-      RETRY_DELAY: window.zmMontageConfig ? window.zmMontageConfig.RETRY_DELAY : 5000,
+      MAX_RETRIES: window.zmMontageConfig ? window.zmMontageConfig.MAX_RETRIES : 5,
+      RETRY_DELAY: window.zmMontageConfig ? window.zmMontageConfig.RETRY_DELAY : 1000,
       STREAM_MODES: window.zmMontageConfig ? window.zmMontageConfig.STREAM_MODES : ['jpeg', 'mpeg', 'single'],
+      activeStreams: new Map(),
       
       getStreamUrl: function(monitorId, modeIndex = 0) {
         const baseUrl = 'http://demo.zoneminder.com/cgi-bin/nph-zms';
         const mode = this.STREAM_MODES[modeIndex] || 'single';
-        return `${baseUrl}?mode=${mode}&monitor=${monitorId}&rand=${Date.now()}`;
+        return `${baseUrl}?mode=${mode}&monitor=${monitorId}&t=${Date.now()}`;
+      },
+      
+      loadMJPEG: function(url, imgElement, retryCount = 0) {
+        let retryDelay = this.RETRY_DELAY * Math.pow(2, retryCount);
+        
+        fetch(url + `&cache_bust=${Date.now()}`)
+          .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.blob();
+          })
+          .then(blob => {
+            if (imgElement && imgElement.parentNode) {
+              const objectUrl = URL.createObjectURL(blob);
+              
+              if (imgElement.src && imgElement.src.startsWith('blob:')) {
+                URL.revokeObjectURL(imgElement.src);
+              }
+              
+              imgElement.src = objectUrl;
+              imgElement.style.opacity = '1';
+              this.hideRetryButton(imgElement);
+              
+              NVR.debug(`MJPEG stream loaded successfully for ${url}`);
+            }
+          })
+          .catch(error => {
+            NVR.debug(`MJPEG fetch failed (attempt ${retryCount + 1}): ${error.message}`);
+            
+            if (retryCount < this.MAX_RETRIES && imgElement && imgElement.parentNode) {
+              imgElement.style.opacity = '0.5';
+              setTimeout(() => {
+                this.loadMJPEG(url, imgElement, retryCount + 1);
+              }, retryDelay);
+            } else {
+              this.showRetryButton(imgElement, url);
+            }
+          });
+      },
+      
+      showRetryButton: function(imgElement, url) {
+        if (!imgElement || !imgElement.parentNode) return;
+        
+        let retryBtn = imgElement.parentNode.querySelector('.mjpeg-retry-btn');
+        if (!retryBtn) {
+          retryBtn = document.createElement('button');
+          retryBtn.className = 'mjpeg-retry-btn';
+          retryBtn.textContent = 'Retry Stream';
+          retryBtn.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 1000;
+          `;
+          
+          retryBtn.onclick = () => {
+            this.hideRetryButton(imgElement);
+            this.loadMJPEG(url, imgElement, 0);
+          };
+          
+          imgElement.parentNode.style.position = 'relative';
+          imgElement.parentNode.appendChild(retryBtn);
+        }
+        retryBtn.style.display = 'block';
+      },
+      
+      hideRetryButton: function(imgElement) {
+        if (!imgElement || !imgElement.parentNode) return;
+        
+        const retryBtn = imgElement.parentNode.querySelector('.mjpeg-retry-btn');
+        if (retryBtn) {
+          retryBtn.style.display = 'none';
+        }
       },
       
       loadStream: function(monitorId, element, attempt = 0) {
-        element.src = this.getStreamUrl(monitorId, attempt);
+        const url = this.getStreamUrl(monitorId, attempt);
         
-        element.onerror = () => {
-          if (attempt < this.MAX_RETRIES) {
-            setTimeout(() => {
-              this.loadStream(monitorId, element, attempt + 1);
-            }, this.RETRY_DELAY);
-          } else {
-            element.src = this.getStreamUrl(monitorId, this.STREAM_MODES.length - 1);
-          }
-        };
+        if (this.STREAM_MODES[attempt] === 'jpeg') {
+          this.loadMJPEG(url, element);
+        } else {
+          element.src = url;
+          
+          element.onerror = () => {
+            if (attempt < this.MAX_RETRIES) {
+              setTimeout(() => {
+                this.loadStream(monitorId, element, attempt + 1);
+              }, this.RETRY_DELAY * Math.pow(2, attempt));
+            } else {
+              element.src = this.getStreamUrl(monitorId, this.STREAM_MODES.length - 1);
+            }
+          };
+        }
+      },
+      
+      cleanup: function() {
+        document.querySelectorAll('img[src^="blob:"]').forEach(img => {
+          URL.revokeObjectURL(img.src);
+        });
       }
     };
 
@@ -114,6 +206,7 @@ angular.module('zmApp.controllers')
       if (handlers.resize) {
         window.removeEventListener('resize', handlers.resize);
       }
+      MontageStream.cleanup();
       handlers.resize = null;
       NVR.debug('MontageCtrl: Event handlers cleaned up');
     });
@@ -2368,29 +2461,18 @@ function initCameraStream(cameraId) {
   var streamUrl = $scope.constructStream(monitor);
   if (!streamUrl) return;
   
-  console.log('Loading stream for monitor ' + cameraId, streamUrl);
+  console.log('Loading enhanced MJPEG stream for monitor ' + cameraId, streamUrl);
   
-  var token = $rootScope.authSession.replace(/[?&]auth=([^&]+)/, '$1');
-  var headers = {};
-  if (token && token !== $rootScope.authSession) {
-    headers['Authorization'] = 'Bearer ' + token;
+  var imgElement = document.getElementById('img-' + getMonitorIndex(cameraId));
+  if (imgElement) {
+    imgElement.style.transition = 'opacity 0.3s ease';
+    
+    if (streamUrl.includes('mode=jpeg')) {
+      MontageStream.loadMJPEG(streamUrl, imgElement);
+    } else {
+      MontageStream.loadStream(cameraId, imgElement);
+    }
   }
-  
-  fetch(streamUrl, { 
-    method: 'HEAD',
-    headers: headers
-  })
-  .then(function(response) {
-    if (!response.ok) throw new Error('Stream inaccessible');
-    console.log('Stream verified:', streamUrl);
-    loadStreamWithFallback(cameraId, streamUrl);
-  })
-  .catch(function(error) {
-    console.error('Stream error:', error);
-    var fallbackUrl = streamUrl.replace('mode=' + STREAM_MODE, 'mode=single');
-    console.warn('Stream failed, falling back to snapshot for ' + cameraId);
-    loadStreamWithFallback(cameraId, fallbackUrl);
-  });
 }
 
 function loadStreamWithFallback(cameraId, streamUrl) {

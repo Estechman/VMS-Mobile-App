@@ -5,6 +5,10 @@ const {dialog} = require('electron')
 const path = require('path');
 const url = require('url');
 
+app.commandLine.appendSwitch('enable-accelerated-mjpeg-decode');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+
 
 // Module to create native browser window.
 const {BrowserWindow} = electron;
