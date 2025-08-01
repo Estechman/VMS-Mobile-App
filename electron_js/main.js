@@ -73,8 +73,8 @@ function createAlternateWindow() {
     icon: path.join(__dirname, '/../resources/icon.png'),
     webPreferences:{
       nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: true
+      contextIsolation: false,
+      sandbox: false
     }});
 
     console.log ("startUrl");
@@ -131,8 +131,8 @@ function createWindow() {
         icon: path.join(__dirname, '/../resources/icon.png'),
         webPreferences:{
           nodeIntegration: false,
-          contextIsolation: true,
-          sandbox: true
+          contextIsolation: false,
+          sandbox: false
         }});
 //
     console.log (path.join(__dirname, '/../resources/icon.png'));

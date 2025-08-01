@@ -122,7 +122,10 @@ do
                 echo $APPVER > $BASENAME/version
                 echo "APP VER IS $APPVER"
                 exe cp resources/icon.png $BASENAME
-                exe cd $i 
+                if [[ "$i" == *"mac"* ]]; then
+                    ./customize_info_plist.sh $BASENAME/Info.plist
+                fi
+                exe cd $i
                 cat app/www/js/NVR.js | sed "s/var zmAppVersion[ ]*=[ ]*\".*\"/var zmAppVersion=\"$APPVER\"/" > app/www/js/NVR.js.tmp
                 exe rm -fr app/www/js/NVR.js
                 exe mv app/www/js/NVR.js.tmp app/www/js/NVR.js
