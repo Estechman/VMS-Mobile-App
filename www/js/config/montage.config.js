@@ -12,7 +12,12 @@ window.zmMontageConfig = {
   
   MJPEG_FETCH_ENABLED: true,
   GPU_ACCELERATION: true,
-  EXPONENTIAL_BACKOFF: true
+  EXPONENTIAL_BACKOFF: true,
+  
+  FPS_OPTIMIZATION_ENABLED: true,
+  SNAPSHOT_FALLBACK_ENABLED: true,
+  SNAPSHOT_RETRY_DELAY: 30000,
+  MAX_EXPONENTIAL_BACKOFF: 30000
 };
 
 if (!window.AppConfig) window.AppConfig = {};

@@ -2888,6 +2888,23 @@ angular.module('zmApp.controllers')
 
         },
 
+        optimizeMonitorFPS: function(monitorData) {
+          if (monitorData && monitorData.status) {
+            var fps = parseFloat(monitorData.status.fps) || 0;
+            var analysisFps = parseFloat(monitorData.status.analysisfps) || 0;
+            
+            if (fps < 1.0 && analysisFps > 30) {
+              debug("Monitor " + monitorData.status.monitor + " has low FPS (" + fps + ") but high analysis FPS (" + analysisFps + "), optimizing...");
+              
+              return {
+                optimizedFPS: 10,
+                reason: 'high_analysis_low_capture'
+              };
+            }
+          }
+          return null;
+        },
+
         killLiveStream: function (ck, url, name) {
           if (ck === undefined) {
             log("Cannot kill a live stream without a connkey", new Error().stack);

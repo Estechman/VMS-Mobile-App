@@ -68,6 +68,7 @@ angular.module('zmApp.controllers')
       RETRY_DELAY: window.zmMontageConfig ? window.zmMontageConfig.RETRY_DELAY : 1000,
       STREAM_MODES: window.zmMontageConfig ? window.zmMontageConfig.STREAM_MODES : ['jpeg', 'mpeg', 'single'],
       activeStreams: new Map(),
+      retryAttempts: new Map(),
       
       getStreamUrl: function(monitorId, modeIndex = 0) {
         const baseUrl = 'http://demo.zoneminder.com/cgi-bin/nph-zms';
@@ -75,8 +76,12 @@ angular.module('zmApp.controllers')
         return `${baseUrl}?mode=${mode}&monitor=${monitorId}&t=${Date.now()}`;
       },
       
+      getRetryDelay: function(retryCount) {
+        return Math.min(1000 * Math.pow(2, retryCount), 30000);
+      },
+      
       loadMJPEG: function(url, imgElement, retryCount = 0) {
-        let retryDelay = this.RETRY_DELAY * Math.pow(2, retryCount);
+        let retryDelay = this.getRetryDelay(retryCount);
         
         fetch(url + `&cache_bust=${Date.now()}`)
           .then(res => {
@@ -166,7 +171,7 @@ angular.module('zmApp.controllers')
             if (attempt < this.MAX_RETRIES) {
               setTimeout(() => {
                 this.loadStream(monitorId, element, attempt + 1);
-              }, this.RETRY_DELAY * Math.pow(2, attempt));
+              }, this.getRetryDelay(attempt));
             } else {
               element.src = this.getStreamUrl(monitorId, this.STREAM_MODES.length - 1);
             }
@@ -193,6 +198,8 @@ angular.module('zmApp.controllers')
     handlers.resize = function() {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(function() {
+        NVR.debug('Debounced resize triggered');
+        
         if (typeof calculateGridSize === 'function') {
           var visibleMonitors = $scope.MontageMonitors.filter(function(m) { 
             return m.Monitor.listDisplay !== 'noshow'; 
@@ -200,9 +207,12 @@ angular.module('zmApp.controllers')
           var gridConfig = calculateGridSize(visibleMonitors);
           updateGrid(gridConfig);
         }
+        
         if (pckry && typeof pckry.layout === 'function') {
           pckry.layout();
         }
+        
+        MontageStream.retryAttempts.clear();
       }, 200);
     };
     
@@ -2160,26 +2170,28 @@ function calculateGridSize(cameraCount) {
         return;
       }
       
-      if (typeof initCameraStream === 'function') {
-        NVR.debug('Attempting stream validation for monitor: ' + monitor.Monitor.Id);
-        initCameraStream(monitor.Monitor.Id);
-        return;
-      }
+      var retryCount = MontageStream.retryAttempts.get(monitor.Monitor.Id) || 0;
+      var retryDelay = MontageStream.getRetryDelay(retryCount);
       
-      var mintimesec = 10;
-      var nowt = moment();
-      var thent = monitor.Monitor.regenTime || moment();
-      if (nowt.diff(thent, 'seconds') >= mintimesec) {
-        console.log('IMAGE ERROR CALLING REGEN');
-        NVR.regenConnKeys(monitor);
-        NVR.debug("Image load error for: "+monitor.Monitor.Id+" regenerated connKey is:"+monitor.Monitor.connKey);
+      if (retryCount < MontageStream.MAX_RETRIES) {
+        NVR.debug('Stream error for monitor ' + monitor.Monitor.Id + ', retry ' + (retryCount + 1) + ' in ' + retryDelay + 'ms');
+        
+        MontageStream.retryAttempts.set(monitor.Monitor.Id, retryCount + 1);
+        
+        if (monitor.Monitor.regenHandle) {
+          $timeout.cancel(monitor.Monitor.regenHandle);
+        }
+        
+        monitor.Monitor.regenHandle = $timeout(function() {
+          if (typeof initCameraStream === 'function') {
+            initCameraStream(monitor.Monitor.Id);
+          } else {
+            NVR.regenConnKeys(monitor);
+          }
+        }, retryDelay);
       } else {
-        var dur = mintimesec - nowt.diff(thent, 'seconds');
-        NVR.debug("Image load error for Monitor: "+monitor.Monitor.Id+" scheduling for connkey regen in "+dur+"s");
-        monitor.Monitor.regenHandle = $timeout ( function() {
-          NVR.debug('deferred image error, calling regen');
-          //console.log ('DEFERRED IMAGE ERROR CALLING REGEN');
-          NVR.regenConnKeys(monitor);}, dur*1000 );
+        NVR.debug('Max retries reached for monitor ' + monitor.Monitor.Id + ', falling back to snapshot');
+        showSnapshotFallback(monitor.Monitor.Id);
       }
     };
 
@@ -2443,6 +2455,15 @@ $scope.constructStream = function(monitor) {
       stream += appendConnKey(monitor.Monitor.connKey);
 
     var fps = NVR.getLogin().montageliveFPS;
+    
+    if (window.zmMontageConfig && window.zmMontageConfig.FPS_OPTIMIZATION_ENABLED) {
+      var optimization = NVR.optimizeMonitorFPS(monitor.Monitor);
+      if (optimization) {
+        fps = optimization.optimizedFPS;
+        NVR.debug('Applied FPS optimization for monitor ' + monitor.Monitor.Id + ': ' + fps + ' (' + optimization.reason + ')');
+      }
+    }
+    
     if (fps) {
       stream += '&maxfps=' + fps;
     }
@@ -2514,6 +2535,35 @@ function showFallbackImage(cameraId) {
     window.dispatchEvent(new CustomEvent('stream-error', {
       detail: { cameraId: cameraId, error: 'Stream and snapshot both failed' }
     }));
+  }
+}
+
+function showSnapshotFallback(monitorId) {
+  var monitor = $scope.MontageMonitors.find(function(m) { 
+    return m.Monitor.Id == monitorId; 
+  });
+  if (!monitor) return;
+  
+  var imgElement = document.getElementById('img-' + getMonitorIndex(monitorId));
+  if (imgElement) {
+    var snapshotUrl = monitor.Monitor.recordingURL + 
+                     '/api/monitors/' + monitorId + 
+                     '/snapshot?rand=' + Date.now();
+    snapshotUrl += $rootScope.authSession;
+    snapshotUrl += NVR.insertSpecialTokens();
+    
+    imgElement.src = snapshotUrl;
+    imgElement.style.opacity = '0.7';
+    
+    NVR.debug('Fallback snapshot shown for monitor: ' + monitorId);
+    
+    MontageStream.retryAttempts.delete(monitorId);
+    
+    $timeout(function() {
+      if (typeof initCameraStream === 'function') {
+        initCameraStream(monitorId);
+      }
+    }, 30000);
   }
 }
 
