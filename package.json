@@ -238,7 +238,7 @@
     "cap:open:ios": "npm run build && npx cap sync && npx cap open ios",
     "cap:open:android": "npm run build && npx cap sync && npx cap open android"
   },
-  "main": "electron.js",
+  "main": "electron_js/main.js",
   "build": {
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "appId": "com.zoneminder.zmninja",
