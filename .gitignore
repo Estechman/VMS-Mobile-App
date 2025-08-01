@@ -25,3 +25,6 @@ dist/
 
 
 www/templates/zmNinja.code-workspace
+
+# Angular build cache
+.angular/
