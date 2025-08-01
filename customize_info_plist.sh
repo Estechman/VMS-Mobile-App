@@ -12,4 +12,6 @@ sed -i 's/<key>CFBundleName<\/key>\s*<string>Electron<\/string>/<key>CFBundleNam
 sed -i 's/<string>com\.github\.Electron<\/string>/<string>com.zoneminder.zmninja<\/string>/g' "$INFO_PLIST"
 sed -i 's/<string>electron\.icns<\/string>/<string>icon.icns<\/string>/g' "$INFO_PLIST"
 
+sed -i '/<key>ElectronAsarIntegrity<\/key>/,/<\/dict>/d' "$INFO_PLIST"
+
 echo "Info.plist customized for zmNinja"
