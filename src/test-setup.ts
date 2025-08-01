@@ -1,6 +1,34 @@
-import 'jest-preset-angular/setup-jest';
-
+import { setupZoneTestEnv } from 'jest-preset-angular/setup-env/zone';
 import '@testing-library/jest-dom';
+
+setupZoneTestEnv();
+
+const mockCustomElement = class extends HTMLElement {
+  constructor() {
+    super();
+  }
+};
+
+Object.defineProperty(window, 'customElements', {
+  value: {
+    define: jest.fn(),
+    get: jest.fn(),
+    whenDefined: jest.fn().mockResolvedValue(undefined),
+  },
+  writable: true,
+});
+
+const ionicComponents = [
+  'ion-app', 'ion-content', 'ion-header', 'ion-toolbar', 'ion-title',
+  'ion-button', 'ion-input', 'ion-item', 'ion-label', 'ion-list',
+  'ion-toggle', 'ion-toast', 'ion-alert', 'ion-modal', 'ion-popover'
+];
+
+ionicComponents.forEach(tagName => {
+  if (!customElements.get(tagName)) {
+    customElements.define(tagName, mockCustomElement);
+  }
+});
 Object.defineProperty(window, 'localStorage', {
   value: {
     getItem: jest.fn(),

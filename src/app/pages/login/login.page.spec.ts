@@ -24,7 +24,8 @@ describe('LoginPage', () => {
       configureSSL: jest.fn(),
       saveToCloud: jest.fn(),
       loadMonitors: jest.fn(),
-      isMobile: jest.fn()
+      isMobile: jest.fn(),
+      validateApi: jest.fn()
     };
     const eventServerSpy = {
       init: jest.fn()
@@ -61,7 +62,7 @@ describe('LoginPage', () => {
   it('should initialize form with default values', () => {
     component.ngOnInit();
     expect(component.loginForm).toBeDefined();
-    expect(component.loginForm.get('isUseAuth')?.value).toBe(true);
+    expect(component.loginForm.get('isUseAuth')?.value).toBe(false); // Demo server preset sets this to false
     expect(component.loginForm.get('keepAwake')?.value).toBe(true);
   });
 
@@ -74,6 +75,7 @@ describe('LoginPage', () => {
 
   it('should login successfully with valid data', async () => {
     (mockNvrService.login as jest.Mock).mockReturnValue(of({ access_token: 'test-token' }));
+    (mockNvrService.validateApi as jest.Mock).mockReturnValue(of({ success: true }));
     (mockNvrService.loadMonitors as jest.Mock).mockReturnValue(of([]));
     (mockNvrService.configureBasicAuth as jest.Mock).mockResolvedValue(undefined);
     (mockNvrService.configureSSL as jest.Mock).mockResolvedValue(undefined);

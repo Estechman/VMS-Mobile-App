@@ -118,7 +118,7 @@ angular.module('zmApp.controllers')
         'url': '', // This is the ZM portal path
         'apiurl': '', // This is the API path
         'eventServer': '', //experimental Event server address
-        'maxMontage': "100", //total # of monitors to display in montage
+        'maxMontage': "500", //total # of monitors to display in montage
         'streamingurl': "",
         'maxFPS': "3", // image streaming FPS
         'montageQuality': "50", // montage streaming quality in %
@@ -610,9 +610,18 @@ angular.module('zmApp.controllers')
         zmgroups = [];
 
         if (get_unsupported('groups_associations')) {
-          debug ('Groups Association API is marked as unsupported, not invoking');
-          d.resolve(true);
-          return d.promise;
+          debug('Groups Association API is marked as unsupported, checking for cached data');
+          
+          var cachedData = $localstorage.getObject('cached_zmgroups');
+          if (cachedData && cachedData.data && cachedData.data.groups) {
+            debug('Found cached groups data despite API being marked unsupported - using cached data');
+            delete loginData.unsupported.groups_associations;
+            setLogin(loginData);
+          } else {
+            debug('No cached groups data found and API is marked unsupported');
+            d.resolve(true);
+            return d.promise;
+          }
         }
 
         var apiurl = loginData.apiurl+'/groups/associations.json?'+$rootScope.authSession;
@@ -624,13 +633,16 @@ angular.module('zmApp.controllers')
         cache_or_http(apiurl, 'cached_zmgroups')
         .then (function (data) {
           data = data.data;
+          debug('Groups cached data structure: ' + JSON.stringify(data));
 //          console.log (JSON.stringify(data));
 
           //debug ('Groups are:'+JSON.stringify(data));
           if (data && data.groups) {
+            debug('Found ' + data.groups.length + ' groups in cached data');
             zmgroups = [];
             for (var i=0; i< data.groups.length; i++) {
               zmgroups.push(data.groups[i].Group.Name);
+              debug('Added group: ' + data.groups[i].Group.Name);
               //console.log( "Checking Group "+data.groups[i].Group.Name);
              for (var j=0; j < data.groups[i].Monitor.length; j++) {
                for (var k = 0; k < monitors.length; k++) {
@@ -661,10 +673,11 @@ angular.module('zmApp.controllers')
                } // monitors
              } // groups monitors
             } // groups
+            debug('Final zmgroups array: ' + JSON.stringify(zmgroups));
             d.resolve(true);
             return (d.promise);
           } else {
-            debug('No groups found');
+            debug('No groups found in cached data: ' + JSON.stringify(data));
             d.resolve(true);
             return (d.promise);
           }
@@ -1924,6 +1937,10 @@ angular.module('zmApp.controllers')
           return loginData.disableSimulStreaming;
         },
 
+        isStreamingEnabled: function() {
+          return true; // Force-enable streaming regardless of multi-port config
+        },
+
         getCurrentServerVersion: function () {
           return (loginData.currentServerVersion);
         },
@@ -2834,6 +2851,21 @@ angular.module('zmApp.controllers')
         },
 
         listOfZMGroups: function () {
+          if (get_unsupported('groups_associations') && loginData.apiurl) {
+            debug("Groups were marked as unsupported but we have cached data - clearing flag");
+            loginData.unsupported = loginData.unsupported || {};
+            delete loginData.unsupported.groups_associations;
+            setLogin(loginData);
+            
+            var apiurl = loginData.apiurl+'/groups/associations.json?'+$rootScope.authSession;
+            cache_or_http(apiurl, 'cached_zmgroups')
+            .then(function(data) {
+              if (data && data.data && data.data.groups) {
+                debug("Successfully loaded " + data.data.groups.length + " groups after clearing unsupported flag");
+                getZMGroups();
+              }
+            });
+          }
           return zmgroups;
         },
 
@@ -2882,6 +2914,23 @@ angular.module('zmApp.controllers')
               }
             );
 
+        },
+
+        optimizeMonitorFPS: function(monitorData) {
+          if (monitorData && monitorData.status) {
+            var fps = parseFloat(monitorData.status.fps) || 0;
+            var analysisFps = parseFloat(monitorData.status.analysisfps) || 0;
+            
+            if (fps < 1.0 && analysisFps > 30) {
+              debug("Monitor " + monitorData.status.monitor + " has low FPS (" + fps + ") but high analysis FPS (" + analysisFps + "), optimizing...");
+              
+              return {
+                optimizedFPS: 10,
+                reason: 'high_analysis_low_capture'
+              };
+            }
+          }
+          return null;
         },
 
         killLiveStream: function (ck, url, name) {

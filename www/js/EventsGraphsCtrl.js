@@ -208,20 +208,32 @@ angular.module('zmApp.controllers').controller('zmApp.EventsGraphsCtrl', ['$ioni
     });
 
     $scope.chart.options = {
-
       responsive: true,
-      scaleBeginAtZero: true,
-      scaleShowGridLines: false,
-      scaleGridLineColor: "rgba(0,0,0,.05)",
-      scaleGridLineWidth: 1,
-      barShowStroke: true,
-      barStrokeWidth: 2,
-      barValueSpacing: 5,
-      barDatasetSpacing: 1,
-      showTooltip: true,
-
-      //String - A legend template
-      //  legendTemplate : '<ul class="tc-chart-js-legend"><% for (var i=0; i<datasets.length; i++){%><li><span style="background-color:<%=datasets[i].fillColor%>"></span><%if(datasets[i].label){%><%=datasets[i].label%><%}%></li><%}%></ul>'
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            display: false,
+            color: "rgba(0,0,0,.05)"
+          }
+        }
+      },
+      elements: {
+        bar: {
+          borderWidth: 2
+        }
+      },
+      layout: {
+        padding: {
+          left: 5,
+          right: 5
+        }
+      }
     };
   }; //generateTCChart
 }]);

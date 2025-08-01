@@ -43,8 +43,8 @@
           <!-- 
             <li> <a href="" ng-click="killAllImages()"> <i class="ion-ionic"></i></a></li>
           -->
-          <li ng-if="zmGroups.length">
-            <a  ng-click="selectZMGroup()">
+          <li ng-if="zmGroups.length" style="background-color: rgba(255, 165, 0, 0.8) !important;" id="groups-button-container">
+            <a ng-click="selectZMGroup()" title="Select Group ({{zmGroups.length}} available)" id="groups-button">
               <i class="ion-folder"></i>
             </a>
           </li>                    
@@ -105,6 +105,12 @@
             </a>
           </li>
 
+          <li ng-if="!$root.LoginData.isKiosk" style="background-color: rgba(0, 255, 0, 0.8) !important;" id="refresh-button-container">
+            <a href="" ng-click="forceStreamRestart()" title="Manual Stream Restart" id="refresh-button">
+              <i class="ion-refresh"></i>
+            </a>
+          </li>
+
         </ul>
       </div>
 
@@ -146,6 +152,8 @@
 
                   <img class="{{monitor.Monitor.selectStyle}}" id="img-{{$index}}"
                     image-spinner-src="{{constructStream(monitor)}}"
+                    monitor-name="{{monitor.Monitor.Name}}"
+                    camera-id="{{monitor.Monitor.Id}}"
                     ng-click="!isDragabillyOn?openModal(monitor.Monitor.Id, monitor.Monitor.Controllable, monitor.Monitor.ControlId, monitor.Monitor.connKey,monitor):toggleSelectItem(monitor.Monitor.Id);"
                     image-spinner-loader="lines"
                     img-spinner-w="{{monitor.Monitor.Width}}"

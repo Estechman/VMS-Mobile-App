@@ -49,7 +49,7 @@ const config: CapacitorConfig = {
       BackgroundColor: '#444444',
       'android-targetSdkVersion': '34',
       'android-compileSdkVersion': '34',
-      'android-minSdkVersion': '22',
+      'android-minSdkVersion': '24',
       SplashScreenBackgroundColor: '#ababab',
       StatusBarOverlaysWebView: 'false',
       StatusBarBackgroundColor: '#2980b9',

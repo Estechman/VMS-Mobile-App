@@ -44,7 +44,17 @@ It also runs on the desktop (see below)
 
 Desktop Platforms
 -----------------
-Please download binaries from [here](https://github.com/zoneminder/zmNinja/releases). 
+Please download binaries from [here](https://github.com/zoneminder/zmNinja/releases).
+
+### macOS Installation Notes
+Due to macOS security features, unsigned applications will show a "damaged and can't be opened" error. This is normal behavior for apps not distributed through the App Store.
+
+**Solution**: Remove the quarantine attribute after downloading:
+```bash
+xattr -cr /path/to/zmNinja-mac-arm64.app
+```
+
+Then right-click the app and select "Open" to launch. This is the standard procedure for unsigned macOS applications and is documented in Apple Support Community forums.
 
 
 Key Features 

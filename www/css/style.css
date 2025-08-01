@@ -1180,7 +1180,7 @@ videogular vg-cue-points vg-cue-point {
  width: var(--grid-width) !important;
 }
 
-.grid-item {
+.grid-item:not([style*="width"]) {
     width: 1%;
 }
 

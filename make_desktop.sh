@@ -122,13 +122,22 @@ do
                 echo $APPVER > $BASENAME/version
                 echo "APP VER IS $APPVER"
                 exe cp resources/icon.png $BASENAME
-                exe cd $i 
+                if [[ "$i" == *"mac"* ]]; then
+                    ./customize_info_plist.sh $BASENAME/Info.plist
+                fi
+                exe cd $i
                 cat app/www/js/NVR.js | sed "s/var zmAppVersion[ ]*=[ ]*\".*\"/var zmAppVersion=\"$APPVER\"/" > app/www/js/NVR.js.tmp
                 exe rm -fr app/www/js/NVR.js
                 exe mv app/www/js/NVR.js.tmp app/www/js/NVR.js
                 exe cp app/www/js/NVR.js /tmp
                 
                 rm -fr app.asar
+                
+                if [[ "$i" == *"mac"* ]]; then
+                    rm -fr default_app.asar
+                    echo "Removed default_app.asar to prevent conflict with custom app directory"
+                    echo "Note: Ad-hoc code signing must be performed on macOS after download"
+                fi
 
                 # No idea why but asar is causing problems in windows
                 # main.js changes are not showig up. wuh? - Sep 29, 2017

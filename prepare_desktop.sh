@@ -2,7 +2,7 @@
 
 #REL="v4.0.0"
 # If compiling on rPI make use 3.0.16
-REL="v11.2.3"
+REL="v37.2.5"
 WGET='wget'
 WGET_ARGS='-q --show-progress'
 UNZIP='unzip'

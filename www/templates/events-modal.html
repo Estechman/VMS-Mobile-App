@@ -64,18 +64,21 @@ image-on-error="processImageError(currentEvent);"
           <!-- no default video -->
           <div ng-if="defaultVideo!==undefined && defaultVideo!='' && !isSnapShot() && !isStreamStopped()">
 
-             
-            <div ng-if="isVideoLoading" 
-            class="header-centered">
-            <a class="button  button-icon animated infinite slideInDown icon ion-android-download"></a>
-          </div>
+            <div ng-if="isVideoLoading" class="video-container">
+              <div class="spinner-container">
+                <ion-spinner icon='ripple' class='spinner-energized'></ion-spinner>
+                <div class="loading-text">{{'kVideoLoading' | translate}}...</div>
+              </div>
+            </div>
+
+            <div ng-if="showRetry" class="retry-container">
+              <button class="button button-assertive icon-left ion-refresh" ng-click="retry()">
+                <i class="zmdi zmdi-refresh"></i> {{'kReconnect' | translate}}
+              </button>
+            </div>
 
             <div ng-if="videoIsReady">
-
-           
-              <!-- <div style="max-width:100%; max-height:100%;" on-swipe-left="onSwipeEvent(nextId,1)" on-swipe-right="onSwipeEvent(prevId,-1)" > -->
-              
-               <div on-swipe-left="onSwipeEvent(nextId,1)" on-swipe-right="onSwipeEvent(prevId,-1)" ng-style="{'height':$root.videoHeight+'px', 'width':$root.devWidthIgnorePix+'px'}">
+              <div on-swipe-left="onSwipeEvent(nextId,1)" on-swipe-right="onSwipeEvent(prevId,-1)" ng-style="{'height':$root.videoHeight+'px', 'width':$root.devWidthIgnorePix+'px'}">
 
                 <videogular id="testaut_events_playwindow" vg-can-play="onCanPlay()" vg-native-fullscreen="videoObject.config.nativeFullScreen"
                   vg-player-ready="onPlayerReady($API)" 

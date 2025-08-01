@@ -3,7 +3,7 @@
 /* jslint browser: true*/
 /* global cordova,StatusBar,angular,console,ionic,Masonry,moment,Packery, Draggabilly, imagesLoaded, Chart */
 // FIXME: This is a copy of montageCtrl - needs a lot of code cleanup
-angular.module('zmApp.controllers').controller('zmApp.MontageHistoryCtrl', ['$scope', '$rootScope', 'NVR', 'message', '$ionicSideMenuDelegate', '$timeout', '$interval', '$ionicModal', '$ionicLoading', '$http', '$state', '$ionicPopup', '$stateParams', '$ionicHistory', '$ionicScrollDelegate', '$ionicPlatform', 'zm', '$ionicPopover', '$controller', 'imageLoadingDataShare', '$window', '$translate', 'qHttp', '$q', '$sce',function ($scope, $rootScope, NVR, message, $ionicSideMenuDelegate, $timeout, $interval, $ionicModal, $ionicLoading, $http, $state, $ionicPopup, $stateParams, $ionicHistory, $ionicScrollDelegate, $ionicPlatform, zm, $ionicPopover, $controller, imageLoadingDataShare, $window, $translate, qHttp, $q, $sce) {
+angular.module('zmApp.controllers').controller('zmApp.MontageHistoryCtrl', ['$scope', '$rootScope', 'NVR', 'message', '$ionicSideMenuDelegate', '$timeout', '$interval', '$ionicModal', '$ionicLoading', '$http', '$state', '$ionicPopup', '$stateParams', '$ionicHistory', '$ionicScrollDelegate', '$ionicPlatform', 'zm', '$ionicPopover', '$controller', 'imageLoadingDataShare', '$window', '$translate', 'qHttp', '$q', '$sce', 'StreamErrorHandler', function ($scope, $rootScope, NVR, message, $ionicSideMenuDelegate, $timeout, $interval, $ionicModal, $ionicLoading, $http, $state, $ionicPopup, $stateParams, $ionicHistory, $ionicScrollDelegate, $ionicPlatform, zm, $ionicPopover, $controller, imageLoadingDataShare, $window, $translate, qHttp, $q, $sce, StreamErrorHandler) {
   var broadcastHandles = [];
   var isMultiPort = false;
   $scope.isMultiPort = isMultiPort;
@@ -117,18 +117,18 @@ angular.module('zmApp.controllers').controller('zmApp.MontageHistoryCtrl', ['$sc
       }
     }
     if (m != -1) {
-      $scope.MontageMonitors[i].Monitor.seek = true;
+      $scope.MontageMonitors[m].Monitor.seek = true;
     }
 
     sendCmd(mid, '14', "&offset=" + p)
       .then(function (success) {
-          //console.log ("Removing seek status from "  + $scope.MontageMonitors[i].Monitor.Name);
-          $scope.MontageMonitors[i].Monitor.seek = false;
+          //console.log ("Removing seek status from "  + $scope.MontageMonitors[m].Monitor.Name);
+          $scope.MontageMonitors[m].Monitor.seek = false;
 
         },
         function (err) {
-          //console.log ("Removing seek status from "  + $scope.MontageMonitors[i].Monitor.Name);
-          $scope.MontageMonitors[i].Monitor.seek = false;
+          //console.log ("Removing seek status from "  + $scope.MontageMonitors[m].Monitor.Name);
+          $scope.MontageMonitors[m].Monitor.seek = false;
         });
 
   };
@@ -946,9 +946,17 @@ angular.module('zmApp.controllers').controller('zmApp.MontageHistoryCtrl', ['$sc
 
 
   $scope.onVideoError = function (event) {
-    $ionicLoading.hide();
-    NVR.debug("player reported a video error:" + JSON.stringify(event));
-
+    var action = StreamErrorHandler.handle(event, 'montage-history');
+    NVR.debug("MontageHistory: Error action:", action);
+    
+    if (action === 'RETRYING') {
+      $ionicLoading.show({
+        template: "<ion-spinner icon='ripple' class='spinner-energized'></ion-spinner><br/>" + $translate.instant('kRetrying') + "..."
+      });
+      return;
+    }
+    
+    NVR.debug("MontageHistory: Video error handled:", action);
   };
 
   $scope.onPlayerReady = function (api,m) {

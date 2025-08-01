@@ -5,6 +5,11 @@ const {dialog} = require('electron')
 const path = require('path');
 const url = require('url');
 
+app.commandLine.appendSwitch('enable-accelerated-mjpeg-decode');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('enable-hardware-overlays');
+
 
 // Module to create native browser window.
 const {BrowserWindow} = electron;
@@ -66,7 +71,11 @@ function createAlternateWindow() {
     width: 800,
     height: 800,
     icon: path.join(__dirname, '/../resources/icon.png'),
-    webPreferences:{nodeIntegration:false}});
+    webPreferences:{
+      nodeIntegration: false,
+      contextIsolation: false,
+      sandbox: false
+    }});
 
     console.log ("startUrl");
     const startUrl = process.env.ELECTRON_START_URL || url.format({
@@ -120,7 +129,11 @@ function createWindow() {
         width: mainWindowState.width,
         height: mainWindowState.height,
         icon: path.join(__dirname, '/../resources/icon.png'),
-        webPreferences:{nodeIntegration:false}});
+        webPreferences:{
+          nodeIntegration: false,
+          contextIsolation: false,
+          sandbox: false
+        }});
 //
     console.log (path.join(__dirname, '/../resources/icon.png'));
 

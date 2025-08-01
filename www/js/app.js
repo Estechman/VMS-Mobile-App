@@ -2,7 +2,31 @@
 /* jslint browser: true*/
 /* global cordova,StatusBar,angular,console,alert,PushNotification, moment ,ionic, URI,Packery, ConnectSDK, CryptoJS, ContactFindOptions, localforage,$, Connection, MobileAccessibility, hello */
 
+if (typeof Promise === 'undefined') {
+  document.write('<script src="lib/es6-promise/auto.min.js"><\/script>');
+  console.warn('Loaded Promise polyfill');
+}
 
+if (!window.zmMontageConfig) {
+  console.error('Montage config missing! Loading defaults');
+  window.zmMontageConfig = {
+    STREAM_MODES: ['single'], // Most compatible fallback
+    MAX_RETRIES: 1
+  };
+}
+
+console.debug('Enhanced Streaming Configuration:', {
+  forceStreaming: true,
+  streamMode: 'jpeg',
+  fallbackMode: 'single',
+  mjpegFetch: window.zmMontageConfig?.MJPEG_FETCH_ENABLED || true,
+  gpuAcceleration: window.zmMontageConfig?.GPU_ACCELERATION || true,
+  maxRetries: window.zmMontageConfig?.MAX_RETRIES || 5
+});
+
+window.addEventListener('stream-error', function(e) {
+  console.error('Global stream error:', e.detail);
+});
 
 // core app start stuff
 angular.module('zmApp', [
@@ -609,16 +633,26 @@ angular.module('zmApp', [
 
               };
 
-              bgImg.src = $attributes.imageSpinnerSrc;
+              if ($attributes.imageSpinnerSrc && $attributes.imageSpinnerSrc.trim() !== '') {
+                bgImg.src = $attributes.imageSpinnerSrc;
+              }
 
             } else {
               var ld = NVR.getLogin();
               if (ld.isUseAuth && ($rootScope.authSession=='')) {
                 NVR.log("waiting for authSession to have a value...");
-              } else if ($attributes.imageSpinnerSrc) {
-                $element[0].src = $attributes.imageSpinnerSrc; // set src 
+              } else if ($attributes.imageSpinnerSrc && 
+                         $attributes.imageSpinnerSrc.trim() !== '' && 
+                         $attributes.imageSpinnerSrc !== 'undefined' &&
+                         $attributes.imageSpinnerSrc !== 'null') {
+                NVR.debug("Setting image src for: " + ($attributes.monitorName || 'unknown') + " URL: " + $attributes.imageSpinnerSrc.substring(0, 50) + "...");
+                if (typeof initCameraStream === 'function' && $attributes.cameraId) {
+                  initCameraStream($attributes.cameraId);
+                } else {
+                  $element[0].src = $attributes.imageSpinnerSrc; // set src 
+                }
               } else {
-                NVR.log("No imageSpinnerSrc!");
+                NVR.debug("Skipping image load - empty/invalid URL for monitor: " + ($attributes.monitorName || 'unknown'));
               }
             }
           }
