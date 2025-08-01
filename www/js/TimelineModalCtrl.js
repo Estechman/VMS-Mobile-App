@@ -258,21 +258,30 @@ angular.module('zmApp.controllers').controller('TimelineModalCtrl', ['$scope', '
       },
 
       responsive: true,
-      scaleBeginAtZero: true,
-      scaleShowGridLines: true,
-      scaleGridLineColor: "rgba(0,0,0,.05)",
-      scaleGridLineWidth: 1,
-
-      hover: {
-        mode: 'single',
-        onHover: function (obj) {
-          if (obj.length > 0)
-            tapOrHover(obj[0]._index);
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            display: true,
+            color: "rgba(0,0,0,.05)"
+          }
         }
       },
 
-      //String - A legend template
-      legendTemplate: '<ul class="tc-chart-js-legend"><% for (var i=0; i<datasets.length; i++){%><li><span style="background-color:<%=datasets[i].fillColor%>"></span><%if(datasets[i].label){%><%=datasets[i].label%><%}%></li><%}%></ul>'
+      hover: {
+        mode: 'nearest',
+        intersect: true
+      },
+      onHover: function (event, elements) {
+        if (elements.length > 0) {
+          tapOrHover(elements[0].index);
+        }
+      }
     };
 
     $scope.graphWidth = event.event.Frame.length * 10;
@@ -341,9 +350,9 @@ angular.module('zmApp.controllers').controller('TimelineModalCtrl', ['$scope', '
     });
 
     cv.onclick = function (e) {
-      var b = tcGraph.getElementAtEvent(e);
+      var b = tcGraph.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
       if (b.length > 0) {
-        tapOrHover(b[0]._index);
+        tapOrHover(b[0].index);
       }
     };
   }
