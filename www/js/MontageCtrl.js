@@ -33,6 +33,14 @@ angular.module('zmApp.controllers')
     var viewCleaned = false;
     var randToAvoidCacheMem;
     var beforeReorderPositions=[];
+    
+    var lastStreamRestart = 0;
+    var STREAM_RESTART_THROTTLE = 2000;
+    
+    function canRestartStreams() {
+      var now = new Date().getTime();
+      return (now - lastStreamRestart) > STREAM_RESTART_THROTTLE;
+    }
 
     var streamQueryTimer;
 
@@ -909,7 +917,7 @@ function calculateGridSize(cameraCount) {
         $scope.timeNow = moment().tz(NVR.getTimeZoneNow()).format(NVR.getTimeFormatSec());
 
       if (simulStreaming) {
-         console.log ("Skipping timer as simulStreaming");
+        NVR.debug("Skipping timer as simulStreaming is active");
         return;
       }
 
@@ -1280,6 +1288,11 @@ function calculateGridSize(cameraCount) {
                       NVR.setLogin(ld);
                       
                       $timeout(function() {
+                        if (!canRestartStreams()) {
+                          NVR.debug('Skipping stream restart - too soon after last restart');
+                          return;
+                        }
+                        lastStreamRestart = new Date().getTime();
                         NVR.debug('=== FORCING STREAM RESTART AFTER GROUP CHANGE (POST-LAYOUT) ===');
                         NVR.debug('Forcing stream restart after group change at: ' + new Date().toISOString());
                         currentStreamState = streamState.ACTIVE;
@@ -1310,7 +1323,7 @@ function calculateGridSize(cameraCount) {
                         NVR.debug('Visible after group change: ' + visibleAfterGroup + ', Restarted: ' + restartedAfterGroup);
                         randEachTime();
                         NVR.debug('=== GROUP CHANGE STREAM RESTART COMPLETE ===');
-                      }, 200);
+                      }, 100);
                     });
                   });
 
@@ -1328,6 +1341,11 @@ function calculateGridSize(cameraCount) {
     };
 
     $scope.forceStreamRestart = function() {
+      if (!canRestartStreams()) {
+        NVR.debug('Manual restart blocked - too soon after last restart');
+        return;
+      }
+      lastStreamRestart = new Date().getTime();
       console.log('forceStreamRestart clicked - direct console log');
       NVR.debug('=== MANUAL STREAM RESTART TRIGGERED ===');
       NVR.debug('Manual stream restart triggered at: ' + new Date().toISOString());
@@ -1379,7 +1397,7 @@ function calculateGridSize(cameraCount) {
         randEachTime();
         NVR.debug('Restarted ' + restartedCount + ' streams');
         NVR.debug('=== STREAM RESTART COMPLETE ===');
-      }, 500);
+      }, 100);
     };
 
     $scope.selectUnselectAllToggleReorder = function () {
@@ -3008,6 +3026,40 @@ $scope.$on('$ionicView.afterEnter', function () {
   }.bind(this), reloadPage);
 
   loadNotifications();
+
+  $timeout(function() {
+    var groupsButton = document.querySelector('a[ng-click="selectZMGroup()"]');
+    var refreshButton = document.querySelector('a[ng-click="forceStreamRestart()"]');
+    
+    if (groupsButton) {
+      groupsButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('Groups button clicked via DOM listener');
+        NVR.debug('Groups button clicked via DOM listener');
+        $scope.selectZMGroup();
+        $scope.$apply();
+      });
+      NVR.debug('Added DOM listener for groups button');
+    }
+    
+    if (refreshButton) {
+      refreshButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('Refresh button clicked via DOM listener');
+        NVR.debug('Refresh button clicked via DOM listener');
+        $scope.forceStreamRestart();
+        $scope.$apply();
+      });
+      NVR.debug('Added DOM listener for refresh button');
+    }
+  }, 500);
+
+  NVR.debug("=== MONTAGE INITIALIZATION COMPLETE ===");
+  NVR.debug("Total monitors: " + $scope.MontageMonitors.length);
+  NVR.debug("Visible monitors: " + $scope.MontageMonitors.filter(m => m.Monitor.listDisplay === 'show').length);
+  NVR.debug("Groups available: " + ($scope.zmGroups ? $scope.zmGroups.length : 0));
+  NVR.debug("simulStreaming: " + simulStreaming);
+  NVR.debug("Current timestamp: " + new Date().toISOString());
 
   if ($scope.MontageMonitors.length == 0) {
     $rootScope.zmPopup = $ionicPopup.alert({
