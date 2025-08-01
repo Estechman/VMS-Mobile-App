@@ -105,6 +105,12 @@
             </a>
           </li>
 
+          <li ng-if="!$root.LoginData.isKiosk">
+            <a href="" ng-click="forceStreamRestart()">
+              <i class="ion-refresh"></i>
+            </a>
+          </li>
+
         </ul>
       </div>
 
