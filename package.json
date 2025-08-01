@@ -289,7 +289,13 @@
           "x64"
         ]
       },
-      "icon": "icon.png"
+      "icon": "icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "identity": "-",
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "afterSign": "scripts/notarize.js"
     },
     "win": {
       "icon": "icon.ico",
