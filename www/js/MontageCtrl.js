@@ -1106,6 +1106,23 @@ function calculateGridSize(cameraCount) {
     };
 
     $scope.selectZMGroup = function() {
+      NVR.debug('selectZMGroup called, zmGroups.length: ' + $scope.zmGroups.length);
+      NVR.debug('zmGroups contents: ' + JSON.stringify($scope.zmGroups));
+      
+      if (!$scope.zmGroups || $scope.zmGroups.length === 0) {
+        NVR.debug('zmGroups is empty, forcing refresh from cached data');
+        $scope.zmGroups = NVR.listOfZMGroups();
+        
+        if (!$scope.zmGroups || $scope.zmGroups.length === 0) {
+          NVR.debug('Failed to load groups even after refresh attempt');
+          $rootScope.zmPopup = $ionicPopup.alert({
+            title: $translate.instant('kError'),
+            template: $translate.instant('kErrorNoGroups'),
+          });
+          return;
+        }
+      }
+      
       $scope.tempZMGroups = [];
       var ld = NVR.getLogin();
 
