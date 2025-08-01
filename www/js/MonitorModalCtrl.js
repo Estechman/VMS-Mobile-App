@@ -32,6 +32,9 @@ angular.module('zmApp.controllers').controller('MonitorModalCtrl', ['$scope', '$
   };
 
   var currentStreamState = streamState.SNAPSHOT_LOWQUALITY;
+  $scope.streamState = 'good';
+  $scope.retryAttempts = 0;
+  $scope.retryHandle = null;
 
   // incase imageload is never called
   $timeout (function () {
@@ -540,8 +543,33 @@ angular.module('zmApp.controllers').controller('MonitorModalCtrl', ['$scope', '$
   };
 
   $scope.processImageError = function(monitorId) {
-	  console.log(monitorId);
-    NVR.debug("Image load error for: ");
+    if (currentStreamState != streamState.ACTIVE) {
+      NVR.debug('Not active in processImageError for monitor ' + monitorId);
+      return;
+    }
+    
+    $scope.streamState = 'bad';
+    
+    var retryCount = $scope.retryAttempts || 0;
+    var retryDelay = Math.min(2000 * Math.pow(2, retryCount), 30000);
+    
+    if (retryCount < 3) {
+      NVR.debug('Monitor stream error, retry ' + (retryCount + 1) + ' in ' + retryDelay + 'ms');
+      
+      $scope.retryAttempts = retryCount + 1;
+      
+      if ($scope.retryHandle) {
+        $timeout.cancel($scope.retryHandle);
+      }
+      
+      $scope.retryHandle = $timeout(function() {
+        $scope.streamState = 'good';
+        $scope.connKey = NVR.genConnKey();
+        $scope.reloadView();
+      }, retryDelay);
+    } else {
+      NVR.debug('Max retries reached for monitor ' + monitorId);
+    }
   };
 
   $scope.checkZoom = function () {
@@ -672,6 +700,14 @@ angular.module('zmApp.controllers').controller('MonitorModalCtrl', ['$scope', '$
 
     NVR.debug("imgeLoaded");
     if ($scope.animationInProgress) return;
+
+    $scope.streamState = 'good';
+    
+    $scope.retryAttempts = 0;
+    if ($scope.retryHandle) {
+      $timeout.cancel($scope.retryHandle);
+      $scope.retryHandle = null;
+    }
     /*
     var img = document.getElementById("singlemonitor");
     $scope.cw = img.naturalWidth;
@@ -1392,14 +1428,17 @@ angular.module('zmApp.controllers').controller('MonitorModalCtrl', ['$scope', '$
 
         if (succ.data && succ.data.result && succ.data.result == "Error") {
             NVR.log("Single view: regenerating Connkey as Failed:"+query);
-            $scope.connKey = NVR.genConnKey();
             $scope.streamState = 'bad';
+            $timeout(function() {
+              $scope.connKey = NVR.genConnKey();
+            }, 2000);
         } else if (succ.data && succ.data.result && succ.data.result == "Ok") {
           $scope.streamState = 'good';
         }
       },
       function (err) {
         NVR.log("Single View: Stream Query ERR="+JSON.stringify(err));
+        $scope.streamState = 'bad';
       });
 
     }
