@@ -2914,7 +2914,7 @@ $scope.resetSizesWithInput = function () {
 
       // var p = parseInt(100.0/res + 0.2);
       p = parseFloat (100.0/res).toFixed(3);
-      NVR.debug("Resizing monitors to: "+p);
+      NVR.debug("Resizing monitors to: "+p+"% for "+res+" columns");
 
       // document.documentElement.style.setProperty('--grid-width', p+"%");
       // document.documentElement.style.setProperty('--grid-width', p);
@@ -2960,6 +2960,10 @@ $scope.resetSizes = function (unhideAll, percent) {
     }
   }
 
+  if (!$scope.$$phase) {
+    $scope.$apply();
+  }
+  
   $timeout(function () {
     console.log ('******* DOING RESET');
     pckry.once('layoutComplete', function () {
@@ -2976,9 +2980,9 @@ $scope.resetSizes = function (unhideAll, percent) {
 
       $timeout(function () {
         NVR.debug("inside reset sizes:doing the jiggle and dance...");
-        //pckry.resize(true);
+        pckry.reloadItems();
         pckry.shiftLayout();
-        //$scope.squeezeMonitors();
+        pckry.layout();
       }, 600);
       // $scope.slider.monsize = 2;
     });
