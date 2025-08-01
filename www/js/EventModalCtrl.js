@@ -4,7 +4,7 @@
 /* jslint browser: true*/
 /* global saveAs, cordova,StatusBar,angular,console,ionic, moment, Chart */
 
-angular.module('zmApp.controllers').controller('EventModalCtrl', ['$scope', '$rootScope', 'zm', 'NVR', '$ionicSideMenuDelegate', '$timeout', '$interval', '$ionicModal', '$ionicLoading', '$http', '$state', '$stateParams', '$ionicHistory', '$ionicScrollDelegate', '$q', '$sce', 'carouselUtils', '$ionicPopup', '$translate', '$filter', 'SecuredPopups', '$cordovaFile', function ($scope, $rootScope, zm, NVR, $ionicSideMenuDelegate, $timeout, $interval, $ionicModal, $ionicLoading, $http, $state, $stateParams, $ionicHistory, $ionicScrollDelegate, $q, $sce, carouselUtils, $ionicPopup, $translate, $filter, SecuredPopups, $cordovaFile) {
+angular.module('zmApp.controllers').controller('EventModalCtrl', ['$scope', '$rootScope', 'zm', 'NVR', '$ionicSideMenuDelegate', '$timeout', '$interval', '$ionicModal', '$ionicLoading', '$http', '$state', '$stateParams', '$ionicHistory', '$ionicScrollDelegate', '$q', '$sce', 'carouselUtils', '$ionicPopup', '$translate', '$filter', 'SecuredPopups', '$cordovaFile', 'StreamErrorHandler', function ($scope, $rootScope, zm, NVR, $ionicSideMenuDelegate, $timeout, $interval, $ionicModal, $ionicLoading, $http, $state, $stateParams, $ionicHistory, $ionicScrollDelegate, $q, $sce, carouselUtils, $ionicPopup, $translate, $filter, SecuredPopups, $cordovaFile, StreamErrorHandler) {
 
 
   var videoPlaybarClicked = false;
@@ -308,17 +308,24 @@ angular.module('zmApp.controllers').controller('EventModalCtrl', ['$scope', '$ro
   };
 
   $scope.onVideoError = function (event) {
-    $ionicLoading.hide();
-
     if (!$scope.isModalActive || !playerReady) return;
-    NVR.debug("player reported a video error:" + JSON.stringify(event));
+    
+    var action = StreamErrorHandler.handle(event, 'event-modal');
+    NVR.debug("EventModal: Error action:", action);
+    
+    if (action === 'RETRYING') {
+      $ionicLoading.show({
+        template: "<ion-spinner icon='ripple' class='spinner-energized'></ion-spinner><br/>" + $translate.instant('kRetrying') + "..."
+      });
+      return;
+    }
+    
     $rootScope.zmPopup = SecuredPopups.show('alert', {
       title: $translate.instant('kError'),
       template: $translate.instant('kVideoError'),
       okText: $translate.instant('kButtonOk'),
       cancelText: $translate.instant('kButtonCancel'),
     });
-
   };
 
   //-------------------------------------------------------
@@ -2223,10 +2230,15 @@ angular.module('zmApp.controllers').controller('EventModalCtrl', ['$scope', '$ro
 
             playsInline: true,
             sources: [{
-                src: $sce.trustAsResourceUrl(videoURL),
+                src: $sce.trustAsResourceUrl(videoURL + '#t=0.1'),
                 type: "video/mp4"
               }
             ],
+            plugins: {
+              buffering: {
+                strategy: 'preload-metadata'
+              }
+            },
             theme: "external/videogular2.2.1/videogular.min.css",
             cuepoints: {
               theme: {
@@ -2404,6 +2416,20 @@ angular.module('zmApp.controllers').controller('EventModalCtrl', ['$scope', '$ro
   $scope.processImageError = function(currentEvent) {
     NVR.debug('Failed loading image for event ');
     NVR.debug(currentEvent);
+  };
+
+  $scope.retry = function() {
+    $scope.showRetry = false;
+    $scope.isVideoLoading = true;
+    
+    $ionicLoading.show({
+      template: "<ion-spinner icon='ripple' class='spinner-energized'></ion-spinner><br/>" + $translate.instant('kRetrying') + "..."
+    });
+    
+    if ($scope.videoObject && $scope.videoObject.config && $scope.videoObject.config.sources) {
+      var currentSrc = $scope.videoObject.config.sources[0].src;
+      $scope.videoObject.config.sources[0].src = currentSrc + '&retry=' + Date.now();
+    }
   };
 
 }]);

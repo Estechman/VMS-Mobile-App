@@ -189,15 +189,21 @@ angular.module('zmApp.controllers')
     
     const throttleResize = createThrottler(window.zmMontageConfig ? window.zmMontageConfig.RESIZE_THROTTLE_MS : 200);
     
+    var resizeTimeout;
     handlers.resize = function() {
-      throttleResize(function() {
-        if (typeof updateGridLayout === 'function') {
-          updateGridLayout();
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(function() {
+        if (typeof calculateGridSize === 'function') {
+          var visibleMonitors = $scope.MontageMonitors.filter(function(m) { 
+            return m.Monitor.listDisplay !== 'noshow'; 
+          }).length;
+          var gridConfig = calculateGridSize(visibleMonitors);
+          updateGrid(gridConfig);
         }
         if (pckry && typeof pckry.layout === 'function') {
           pckry.layout();
         }
-      });
+      }, 200);
     };
     
     window.addEventListener('resize', handlers.resize);
