@@ -136,6 +136,7 @@ do
                 if [[ "$i" == *"mac"* ]]; then
                     rm -fr default_app.asar
                     echo "Removed default_app.asar to prevent conflict with custom app directory"
+                    echo "Note: Ad-hoc code signing must be performed on macOS after download"
                 fi
 
                 # No idea why but asar is causing problems in windows
