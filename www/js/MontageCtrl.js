@@ -1183,12 +1183,15 @@ function calculateGridSize(cameraCount) {
                 NVR.setLogin(ld);
 
                 if (simulStreaming) currentStreamState = streamState.STOPPED;
+                
                 for (var iz = 0; iz < $scope.MontageMonitors.length; iz++) {
                   if ($scope.MontageMonitors[iz].Monitor.listDisplay == 'show' && simulStreaming)
                     NVR.killLiveStream(
                       $scope.MontageMonitors[iz].Monitor.connKey,
                       $scope.MontageMonitors[iz].Monitor.controlURL);
+                }
 
+                for (var iz = 0; iz < $scope.MontageMonitors.length; iz++) {
                   // if length of selected groups is 0 then show all
                   var isShow = ln ? false : true;
                   if (ln) {
@@ -1200,8 +1203,18 @@ function calculateGridSize(cameraCount) {
                     }
                   }
 
+                  var previousDisplay = $scope.MontageMonitors[iz].Monitor.listDisplay;
                   $scope.MontageMonitors[iz].Monitor.listDisplay = isShow ? 'show' : 'noshow';
+                  
                   NVR.debug('Group:'+$scope.currentZMGroupName+' setting '+$scope.MontageMonitors[iz].Monitor.Name +' to '+ $scope.MontageMonitors[iz].Monitor.listDisplay);
+                  
+                  if (previousDisplay == 'show' && !isShow && simulStreaming) {
+                    NVR.debug('Killing stream for hidden monitor: ' + $scope.MontageMonitors[iz].Monitor.Name);
+                    NVR.killLiveStream(
+                      $scope.MontageMonitors[iz].Monitor.connKey,
+                      $scope.MontageMonitors[iz].Monitor.controlURL,
+                      $scope.MontageMonitors[iz].Monitor.Name);
+                  }
                 }
                 $scope.monitors = $scope.MontageMonitors;
                 NVR.setMonitors($scope.MontageMonitors);
@@ -2429,7 +2442,8 @@ function loadStreamQueryStatus () {
 
   for (var i=0; i < $scope.MontageMonitors.length; i++) {
     var monitor = $scope.MontageMonitors[i].Monitor;
-    if ((monitor.Function == 'None') || (monitor.listDisplay == 'noshow')) {
+    if ((monitor.Function == 'None') || (monitor.listDisplay == 'noshow') || (monitor.listDisplay == 'blank')) {
+      NVR.debug('Skipping stream query for monitor ' + monitor.Name + ' (display: ' + monitor.listDisplay + ')');
       continue;
     }
     var query = monitor.recordingURL+'/index.php?view=request&request=stream&command=99';
