@@ -49,7 +49,7 @@ angular.module('zmApp.controllers')
 
     //var reloadPage = 30;
 
-    const FORCE_STREAMING = true; // Override multi-port check
+    const FORCE_STREAMING = false; // Allow proper group-based stream management
     const STREAM_MODE = 'jpeg'; // Fallback to 'mpeg' if this fails
 
     function createThrottler(delayMs) {
@@ -1185,10 +1185,13 @@ function calculateGridSize(cameraCount) {
                 if (simulStreaming) currentStreamState = streamState.STOPPED;
                 
                 for (var iz = 0; iz < $scope.MontageMonitors.length; iz++) {
-                  if ($scope.MontageMonitors[iz].Monitor.listDisplay == 'show' && simulStreaming)
+                  if ($scope.MontageMonitors[iz].Monitor.listDisplay == 'show' && simulStreaming) {
+                    NVR.debug('Killing stream for monitor before group change: ' + $scope.MontageMonitors[iz].Monitor.Name);
                     NVR.killLiveStream(
                       $scope.MontageMonitors[iz].Monitor.connKey,
-                      $scope.MontageMonitors[iz].Monitor.controlURL);
+                      $scope.MontageMonitors[iz].Monitor.controlURL,
+                      $scope.MontageMonitors[iz].Monitor.Name);
+                  }
                 }
 
                 for (var iz = 0; iz < $scope.MontageMonitors.length; iz++) {
@@ -2464,11 +2467,13 @@ $scope.constructStream = function(monitor) {
   if (currentStreamState == streamState.STOPPED || monitor.Monitor.listDisplay == 'noshow' ) {
     //console.log("STREAM=empty and auth="+$rootScope.authSession);
     //sconsole.log('EMPTY STREAM');
+    NVR.debug('Returning empty URL for monitor ' + monitor.Monitor.Name + ' (display: ' + monitor.Monitor.listDisplay + ')');
     return "";
   }
 
   if (monitor.Monitor.listDisplay == 'blank') {
     //console.log(monitor.Monitor.Id + " is hidden");
+    NVR.debug('Returning empty URL for monitor ' + monitor.Monitor.Name + ' (display: blank)');
     return "";
   }
 
@@ -2505,6 +2510,7 @@ $scope.constructStream = function(monitor) {
   stream += $rootScope.authSession;
   stream += NVR.insertSpecialTokens();
   //NVR.debug(stream);
+  NVR.debug('Constructed stream URL for monitor ' + monitor.Monitor.Name + ': ' + (stream ? 'valid URL' : 'empty'));
   return stream;
 };
 

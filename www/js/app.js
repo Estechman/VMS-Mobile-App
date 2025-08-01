@@ -633,20 +633,22 @@ angular.module('zmApp', [
 
               };
 
-              bgImg.src = $attributes.imageSpinnerSrc;
+              if ($attributes.imageSpinnerSrc && $attributes.imageSpinnerSrc.trim() !== '') {
+                bgImg.src = $attributes.imageSpinnerSrc;
+              }
 
             } else {
               var ld = NVR.getLogin();
               if (ld.isUseAuth && ($rootScope.authSession=='')) {
                 NVR.log("waiting for authSession to have a value...");
-              } else if ($attributes.imageSpinnerSrc) {
+              } else if ($attributes.imageSpinnerSrc && $attributes.imageSpinnerSrc.trim() !== '') {
                 if (typeof initCameraStream === 'function' && $attributes.cameraId) {
                   initCameraStream($attributes.cameraId);
                 } else {
                   $element[0].src = $attributes.imageSpinnerSrc; // set src 
                 }
               } else {
-                NVR.log("No imageSpinnerSrc!");
+                NVR.log("No imageSpinnerSrc or empty URL!");
               }
             }
           }
