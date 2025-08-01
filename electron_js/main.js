@@ -71,7 +71,11 @@ function createAlternateWindow() {
     width: 800,
     height: 800,
     icon: path.join(__dirname, '/../resources/icon.png'),
-    webPreferences:{nodeIntegration:false}});
+    webPreferences:{
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true
+    }});
 
     console.log ("startUrl");
     const startUrl = process.env.ELECTRON_START_URL || url.format({
@@ -125,7 +129,11 @@ function createWindow() {
         width: mainWindowState.width,
         height: mainWindowState.height,
         icon: path.join(__dirname, '/../resources/icon.png'),
-        webPreferences:{nodeIntegration:false}});
+        webPreferences:{
+          nodeIntegration: false,
+          contextIsolation: true,
+          sandbox: true
+        }});
 //
     console.log (path.join(__dirname, '/../resources/icon.png'));
 
